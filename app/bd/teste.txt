@@ -1,0 +1,17 @@
+mysql --user=root -p
+
+create database teste;
+
+grant all on teste.* to guest identified by "guest";
+
+flush privileges;
+
+exit
+
+mysql --user=guest -p
+
+connect teste;
+
+create table aprendendo (`ID` INT NOT NULL AUTO_INCREMENT,`nome` VARCHAR( 40 ) NOT NULL, `sexo` CHAR( 1 ) NOT NULL, unique ( `ID` ) );
+
+exit

@@ -1,0 +1,27 @@
+create database banco;
+grant all on banco.* to amanda identified by "0909";
+flush privileges;
+connect banco;
+
+create table cliente (`ID_Cliente` INT NOT NULL AUTO_INCREMENT PRIMARY KEY, `nome` VARCHAR(80) NOT NULL, `cpf` CHAR(11) NOT NULL UNIQUE, `telefone` VARCHAR(12) NOT NULL) ENGINE = innodb;
+
+create table conta ( `ID_Conta` INT NOT NULL AUTO_INCREMENT PRIMARY KEY, `senha` INT NOT NULL, `saldo` INT NOT NULL, `tipo` ENUM('Poupanca', 'Salario', 'Corrente') DEFAULT 'Corrente') ENGINE = innodb;
+
+ALTER TABLE `conta` ADD COLUMN `C_ID_Cliente` INT NOT NULL, ADD CONSTRAINT fk_ID_Cliente FOREIGN KEY (`ID_Cliente`) REFERENCES `cliente`(`ID_Cliente`);
+
+ALTER TABLE `conta` CHANGE `ID_Cliente` `C_ID_Cliente` INT NOT NULL;
+
+francisco aparecido luna
+
+
+INSERT INTO cliente(nome, cpf, telefone) values('msgs[0]', msgs[1]','msgs[2]');
+
+INSERT INTO conta(senha, saldo, tipo, C_ID_Cliente) values('msgs[0]', msgs[1]','msgs[2]');
+
+SELECT SUM(conta.saldo + msgs[1]), cliente.nome FROM conta INNER JOIN cliente ON conta.ID_conta = msgs[0] AND conta.C_ID_Cliente = cliente.ID_Cliente;
+
+SELECT cliente.ID_Cliente FROM cliente WHERE nome = ;
+
+SELECT cliente.nome FROM conta INNER JOIN cliente ON conta.ID_conta = msgs[0] AND conta.senha = AND conta.C_ID_Cliente = cliente.ID_Cliente;
+
+UPDATE `conta` SET `saldo` = linhas[0] WHERE `ID_Conta` = msgs[0];
