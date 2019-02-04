@@ -1,13 +1,13 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
+#include <stdio.h> //ok
+#include <string.h> //ok
+#include <stdlib.h> //ok
 #include <iostream>
-#include <unistd.h>
-#include <errno.h>
+#include <unistd.h> //ok
+#include <errno.h> //ok
 
-#include <sys/types.h>
-#include <sys/socket.h> 
-#include <netinet/in.h>
+#include <sys/types.h> //ok
+#include <sys/socket.h> //ok
+#include <netinet/in.h> //ok
 #include <netdb.h> 
 
 #include <mysql/mysql.h>
@@ -29,8 +29,8 @@ class socket_server{
 	
 	public:
 		socket_server();
-		int cria_s();
-		void conecta_s(MYSQL banco, int clientefd);
+		bool cria_s();
+		void conecta_s(MYSQL banco);
 		void encerra_s();
 		
 		MYSQL conecta_bd();

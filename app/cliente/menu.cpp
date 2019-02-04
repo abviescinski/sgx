@@ -50,8 +50,12 @@ void menu_um::criar_conta(int canal){
 				printf("Opcao incorreta. Encerrando serviço.");
 		}	
 		for(int i = 0; i < 5; i++){
-			cout << cliente[i] << endl;
 			send(canal, cliente[i], LEN, 0);
+		}
+		memset(buffer_client, 0x0, LEN);
+		if((resposta_servidor = recv(canal, buffer_client, LEN, 0)) > 0){
+			buffer_client[resposta_servidor] = '\0';
+			cout<<"Conta criada com sucesso! Numero: " << buffer_client<< endl;
 		}	
 	}
 };

@@ -1,0 +1,278 @@
+Tipos de Soquete
+
+Quando um soquete é criado, o programa precisa especificar o domínio do endereço e o tipo de soquete. Dois processos podem se comunicar entre si somente se seus soquetes forem do mesmo tipo e no mesmo domínio.
+
+Existem dois domínios de endereços amplamente utilizados, o domínio unix, no qual dois processos que compartilham um sistema de arquivos comum se comunicam, e o domínio da Internet, no qual dois processos em execução em quaisquer dois hosts na Internet se comunicam. Cada um deles tem seu próprio formato de endereço.
+
+O endereço de um socket no domínio Unix é uma cadeia de caracteres que é basicamente uma entrada no sistema de arquivos.
+
+O endereço de um soquete no domínio da Internet consiste no endereço da Internet da máquina host (cada computador na Internet tem um endereço exclusivo de 32 bits, geralmente chamado de endereço IP).
+Além disso, cada soquete precisa de um número de porta nesse host.
+Números de porta são inteiros não assinados de 16 bits.
+Os números mais baixos são reservados no Unix para serviços padrão. Por exemplo, o número da porta para o servidor FTP é 21. É importante que os serviços padrão estejam na mesma porta em todos os computadores, para que os clientes saibam seus endereços.
+No entanto, os números de porta acima de 2000 estão geralmente disponíveis.
+
+Existem dois tipos de soquete amplamente utilizados, soquetes de fluxo e soquetes de datagrama. Soquetes de fluxo tratam as comunicações como um fluxo contínuo de caracteres, enquanto os soquetes de datagrama precisam ler mensagens inteiras de uma só vez. Cada um usa seu próprio protocolo de comunicação.
+
+Os sockets stream usam o TCP (Transmission Control Protocol), que é um protocolo confiável, orientado por fluxo, e os sockets de datagrama usam UDP (Unix Datagram Protocol), que não é confiável e orientado a mensagens.
+
+Os exemplos neste tutorial usarão sockets no domínio da Internet usando o protocolo TCP
+
+Código de amostra
+C código para um cliente e servidor muito simples são fornecidos para você. Eles se comunicam usando sockets de fluxo no domínio da Internet. O código é descrito em detalhes abaixo. No entanto, antes de ler as descrições e examinar o código, você deve compilar e executar os dois programas para ver o que eles fazem.
+
+server.c
+client.c
+
+Faça o download deles em arquivos chamados server.c e client.c e os compile separadamente em dois executáveis ​​chamados servidor e cliente.
+
+Eles provavelmente não precisarão de nenhum sinalizador de compilação especial, mas em alguns sistemas solaris você pode precisar se vincular à biblioteca de soquetes anexando -lsocket ao seu comando de compilação.
+
+Idealmente, você deve executar o cliente e o servidor em hosts separados na Internet. Inicie o servidor primeiro. Suponha que o servidor esteja sendo executado em uma máquina chamada cheerios. Quando você executa o servidor, você precisa passar o número da porta como um argumento. Você pode escolher qualquer número entre 2000 e 65535. Se essa porta já estiver em uso nessa máquina, o servidor informará isso e sairá. Se isso acontecer, basta escolher outra porta e tentar novamente. Se a porta estiver disponível, o servidor bloqueará até receber uma conexão do cliente. Não se assuste se o servidor não fizer nada;
+
+Não é suposto fazer nada até que uma conexão seja feita.
+
+
+Aqui está uma linha de comando típica:
+
+servidor 51717
+
+Para executar o cliente, é necessário passar dois argumentos, o nome do host no qual o servidor está em execução e o número da porta na qual o servidor está atendendo a conexões.
+
+Aqui está a linha de comando para se conectar ao servidor descrito acima:
+
+cliente cheerios 51717
+
+
+O cliente solicitará que você insira uma mensagem.
+Se tudo funcionar corretamente, o servidor exibirá sua mensagem no stdout, enviará uma mensagem de confirmação ao cliente e terminará.
+O cliente imprimirá a mensagem de confirmação do servidor e terminará.
+
+Você pode simular isso em uma única máquina executando o servidor em uma janela e o cliente em outra. Nesse caso, você pode usar a palavra-chave localhost como o primeiro argumento para o cliente.
+
+O código do servidor usa uma série de construções de programação feias e, portanto, vamos percorrê-lo linha por linha.
+
+#include <stdio.h>
+Este arquivo de cabeçalho contém declarações usadas na maioria das entradas e saídas e é normalmente incluído em todos os programas em C.
+
+#include <sys / types.h>
+Este arquivo de cabeçalho contém definições de vários tipos de dados usados ​​em chamadas do sistema. Esses tipos são usados ​​nos próximos dois arquivos de inclusão.
+
+#include <sys / socket.h>
+O arquivo de cabeçalho socket.h inclui várias definições de estruturas necessárias para sockets.
+
+#include <netinet / in.h>
+O arquivo de cabeçalho in.h contém constantes e estruturas necessárias para endereços de domínio da Internet.
+
+void error (char * msg)
+{
+  perror (msg);
+  saída (1);
+}
+Essa função é chamada quando uma chamada do sistema falha. Ele exibe uma mensagem sobre o erro no stderr e, em seguida, anula o programa. A página man perror (http://www.linuxhowtos.org/data/6/perror.txt) fornece mais informações.
+
+int main (int argc, char * argv [])
+{
+  int sockfd, newsockfd, portno, clilen, n;
+sockfd e newsockfd são descritores de arquivos, ou seja, os subíndices da matriz na tabela de descritores de arquivos. Essas duas variáveis ​​armazenam os valores retornados pela chamada do sistema de soquete e pela chamada do sistema aceito.
+O portno armazena o número da porta na qual o servidor aceita conexões.
+clilen armazena o tamanho do endereço do cliente. Isso é necessário para a chamada do sistema aceito.
+n é o valor de retorno para as chamadas read () e write (); isto é, contém o número de caracteres lidos ou escritos.
+
+buffer de char [256];
+O servidor lê os caracteres da conexão do soquete nesse buffer.
+
+struct sockaddr_in serv_addr, cli_addr;
+Um sockaddr_in é uma estrutura que contém um endereço de internet. Essa estrutura é definida em netinet / in.h.
+
+Aqui está a definição:
+struct sockaddr_in
+{
+  short sin_family; / * deve ser AF_INET * /
+  u_short sin_port;
+  struct in_addr sin_addr;
+  char sin_zero [8]; / * Não usado, deve ser zero * /
+};
+
+Uma estrutura in_addr, definida no mesmo arquivo de cabeçalho, contém apenas um campo, um longo não assinado chamado s_addr.
+A variável serv_addr conterá o endereço do servidor e cli_addr conterá o endereço do cliente que se conecta ao servidor.
+
+ if (argc <2)
+ {
+   fprintf (stderr, "ERROR, nenhuma porta fornecida
+");
+   saída (1);
+ }
+O usuário precisa passar o número da porta na qual o servidor aceitará as conexões como um argumento. Este código exibe uma mensagem de erro se o usuário não fizer isso.
+
+sockfd = socket (AF_INET, SOCK_STREAM, 0);
+if (sockfd <0)
+  erro ("ERRO abertura socket");
+A chamada de sistema socket () cria um novo socket. Leva três argumentos. O primeiro é o domínio de endereço do soquete.
+Lembre-se de que existem dois domínios de endereço possíveis, o domínio unix para dois processos que compartilham um sistema de arquivos comum e o domínio da Internet para quaisquer dois hosts na Internet. A constante de símbolo AF_UNIX é usada para a primeira e AF_INET para a última (na verdade, existem muitas outras opções que podem ser usadas aqui para propósitos especializados).
+O segundo argumento é o tipo de soquete. Lembre-se de que há duas opções aqui, um soquete de fluxo no qual os caracteres são lidos em um fluxo contínuo como se fosse um arquivo ou um pipe e um soquete de datagrama, no qual as mensagens são lidas em blocos. As duas constantes simbólicas são SOCK_STREAM e SOCK_DGRAM.
+O terceiro argumento é o protocolo. Se esse argumento for zero (e sempre deve ser, exceto por circunstâncias incomuns), o sistema operacional escolherá o protocolo mais apropriado. Ele escolherá o TCP para soquetes de fluxo e o UDP para soquetes de datagrama.
+A chamada do sistema de soquete retorna uma entrada na tabela do descritor de arquivo (ou seja, um inteiro pequeno). Esse valor é usado para todas as referências subsequentes a esse soquete. Se a chamada do soquete falhar, retornará -1.
+Neste caso, o programa exibe e mensagem de erro e sai. No entanto, é improvável que esta chamada de sistema falhe.
+
+Esta é uma descrição simplificada da chamada de soquete; Existem inúmeras outras opções para domínios e tipos, mas estas são as mais comuns. A página man do socket () (http://www.linuxhowtos.org/data/6/socket.txt) tem mais informações.
+
+bzero ((char *) & serv_addr, sizeof (serv_addr));
+A função bzero () define todos os valores em um buffer para zero. Leva dois argumentos, o primeiro é um ponteiro para o buffer e o segundo é o tamanho do buffer. Assim, esta linha inicializa serv_addr para zeros. ----
+
+portno = atoi (argv [1]);
+O número da porta na qual o servidor escutará as conexões é passado como um argumento, e essa instrução usa a função atoi () para converter isso de uma cadeia de dígitos em um inteiro.
+
+serv_addr.sin_family = AF_INET;
+A variável serv_addr é uma estrutura do tipo struct sockaddr_in. Essa estrutura possui quatro campos. O primeiro campo é short sin_family, que contém um código para a família de endereços. Deve sempre ser definido para a constante simbólica AF_INET.
+
+serv_addr.sin_port = htons (portno);
+O segundo campo de serv_addr é sin_port curto não assinado, que contém o número da porta. No entanto, em vez de simplesmente copiar o número da porta para esse campo, é necessário convertê-lo em ordem de bytes de rede usando a função htons () que converte um número de porta em ordem de bytes host em um número de porta em ordem de bytes de rede.
+
+serv_addr.sin_addr.s_addr = INADDR_ANY;
+O terceiro campo de sockaddr_in é uma estrutura do tipo struct in_addr que contém apenas um único campo unsigned long s_addr. Este campo contém o endereço IP do host. Para o código do servidor, este será sempre o endereço IP da máquina na qual o servidor está sendo executado, e há uma constante simbólica INADDR_ANY que obtém esse endereço.
+
+if (bind (sockfd, (struct sockaddr *) e serv_addr, sizeof (serv_addr)) <0)
+  erro ("ERROR on binding");
+A chamada de sistema bind () associa um soquete a um endereço, neste caso, o endereço do host atual e o número da porta em que o servidor será executado. São necessários três argumentos, o descritor do arquivo de soquete, o endereço ao qual ele está vinculado e o tamanho do endereço ao qual ele está vinculado. O segundo argumento é um ponteiro para uma estrutura do tipo sockaddr, mas o que é passado é uma estrutura do tipo sockaddr_in e, portanto, isso deve ser convertido para o tipo correto. Isso pode falhar por vários motivos, o mais óbvio é que esse soquete já está em uso nesta máquina. O manual do bind () (http://www.linuxhowtos.org/data/6/bind.txt) tem mais informações.
+
+listen (sockfd, 5);
+A chamada do sistema de escuta permite que o processo escute no soquete para conexões. O primeiro argumento é o descritor de arquivo de soquete e o segundo é o tamanho da fila de registro posterior, ou seja, o número de conexões que podem estar aguardando enquanto o processo está manipulando uma conexão específica. Isso deve ser definido como 5, o tamanho máximo permitido pela maioria dos sistemas. Se o primeiro argumento for um soquete válido, essa chamada não poderá falhar e, portanto, o código não verificará erros. A página do manual listen () (http://www.linuxhowtos.org/data/6/listen.txt) tem mais informações.
+
+clilen = sizeof (cli_addr);
+newsockfd = aceitar (sockfd, (struct sockaddr *) & cli_addr, & clilen);
+if (newsockfd <0)
+  erro ("ERROR on accept");
+A chamada do sistema accept () faz com que o processo bloqueie até que um cliente se conecte ao servidor. Assim, ele acorda o processo quando uma conexão de um cliente foi estabelecida com sucesso. Ele retorna um novo descritor de arquivo e toda a comunicação nessa conexão deve ser feita usando o novo descritor de arquivo. O segundo argumento é um ponteiro de referência para o endereço do cliente na outra extremidade da conexão, e o terceiro argumento é o tamanho dessa estrutura. A página do manual accept () (http://www.linuxhowtos.org/data/6/accept.txt) tem mais informações.
+
+bzero (buffer, 256);
+n = ler (newsockfd, buffer, 255);
+if (n <0) erro ("ERROR reading from socket");
+printf ("Aqui está a mensagem:% s
+",amortecedor);
+Note que só chegaríamos a este ponto depois que um cliente tivesse se conectado ao nosso servidor. Esse código inicializa o buffer usando a função bzero () e, em seguida, lê do soquete. Observe que a chamada de leitura usa o novo descritor de arquivo, aquele retornado por accept (), não o descritor de arquivo original retornado por socket (). Observe também que o read () irá bloquear até que haja algo para ler no soquete, ou seja, depois que o cliente tiver executado um write ().
+
+Ele lerá o número total de caracteres no soquete ou 255, o que for menor, e retornará o número de caracteres lidos. A página man read () (http://www.linuxhowtos.org/data/6/read.txt) tem mais informações.
+
+n = write (newsockfd, "recebi sua mensagem", 18);
+if (n <0) erro ("ERRO escrito no socket");
+Depois que uma conexão é estabelecida, ambas as extremidades podem ler e gravar na conexão. Naturalmente, tudo que é escrito pelo cliente será lido pelo servidor e tudo que for escrito pelo servidor será lido pelo cliente. Este código simplesmente grava uma mensagem curta para o cliente. O último argumento de gravação é o tamanho da mensagem. A página do manual write () (http://www.linuxhowtos.org/data/6/write.txt) tem mais informações.
+
+return 0;
+}
+Isso termina principal e, portanto, o programa. Como main foi declarado como sendo do tipo int conforme especificado pelo padrão ascii, alguns compiladores reclamam se ele não retorna nada.
+
+Melhorias no código do servidor
+
+O código do servidor de amostra acima tem a limitação de manipular apenas uma conexão e, em seguida, morre. Um servidor do "mundo real" deve funcionar indefinidamente e deve ter a capacidade de lidar com um número de conexões simultâneas, cada uma em seu próprio processo. Isso geralmente é feito ao se dar um novo processo para lidar com cada nova conexão.
+O código a seguir tem uma função fictícia chamada dostuff (int sockfd).
+Esta função irá lidar com a conexão depois de estabelecida e fornecer os serviços solicitados pelo cliente. Como vimos acima, uma vez que uma conexão é estabelecida, ambas as extremidades podem usar ler e escrever para enviar informações para a outra extremidade, e os detalhes das informações passadas de um lado para outro não nos dizem respeito aqui.
+Para escrever um servidor de "mundo real", você faria basicamente nenhuma alteração na função main (), e todo o código que fornecia o serviço estaria em dostuff ().
+Para permitir que o servidor manipule várias conexões simultâneas, fazemos as seguintes alterações no código:
+1 - Coloque a declaração de aceitação e o código a seguir em um loop infinito.
+2 - Depois que uma conexão for estabelecida, chame fork () #### para criar um novo processo.
+3 - O processo filho irá fechar sockfd #### e chamar #dastuff #####, passando o novo descritor de arquivo de socket como um argumento. Quando os dois processos concluíram sua conversação, conforme indicado por dostuff () #### retornando, esse processo simplesmente sai.
+4 - O processo pai fecha o newsockfd ####. Como todo esse código está em um loop infinito, ele retornará à instrução accept para aguardar a próxima conexão.
+
+Código do cliente
+
+Como antes, vamos percorrer o programa client.c linha por linha.
+#include <stdio.h>
+#include <sys / types.h>
+#include <sys / socket.h>
+#include <netinet / in.h>
+#include <netdb.h>
+Os arquivos de cabeçalho são os mesmos do servidor com uma adição. O arquivo netdb.h define o host da estrutura, que será usado abaixo.
+
+void error (char * msg)
+{
+  perror (msg);
+  saída (0);
+}
+int main (int argc, char * argv [])
+{
+  int sockfd, portno, n;
+  struct sockaddr_in serv_addr;
+  struct hostent * server;
+A função error () é idêntica à do servidor, assim como as variáveis ​​sockfd, portno e n. A variável serv_addr irá conter o endereço do servidor ao qual queremos nos conectar. É do tipo struct sockaddr_in.
+O servidor variável é um ponteiro para uma estrutura do tipo hostent. Essa estrutura é definida no arquivo de cabeçalho netdb.h da seguinte maneira:
+host de estrutura
+{
+  char * h_name; / * nome oficial do host * /
+  char ** h_aliases; / * lista de alias * /
+  int h_addrtype; / * tipo de endereço do host * /
+  int h_length; / * comprimento do endereço * /
+  char ** h_addr_list; / * lista de endereços do servidor de nomes * /
+  #define h_addr h_addr_list [0] / * endereço, para compatibilidade com versões anteriores * /
+};
+Define um computador host na Internet. Os membros dessa estrutura são:
+h_nome Nome oficial do host.
+h_aliases Uma matriz terminada zero de alternativa
+             nomes para o host.
+h_addrtype O tipo de endereço que está sendo retornado;
+             atualmente sempre AF_INET.
+h_length O comprimento, em bytes, do endereço.
+h_addr_list Um ponteiro para uma lista de endereços de rede
+             para o host nomeado. Endereços de host são
+             retornou na ordem de bytes da rede.
+Observe que h_addr é um alias para o primeiro endereço na matriz de endereços de rede.
+
+buffer de char [256];
+if (argc <3)
+{
+  fprintf (stderr, "uso% s porta do nome do host
+", argv [0]);
+  saída (0);
+}
+portno = atoi (argv [2]);
+sockfd = socket (AF_INET, SOCK_STREAM, 0);
+if (sockfd <0)
+  erro ("ERRO abertura socket");
+
+Todo esse código é o mesmo que no servidor.
+
+server = gethostbyname (argv [1]);
+if (servidor == NULL)
+{
+  fprintf (stderr, "ERROR, nenhum tal host
+");
+  saída (0);
+}
+
+A variável argv [1] contém o nome de um host na Internet, por ex. cs.rpi.edu. A função:
+ struct hostent * gethostbyname (char * nome)
+Aceita esse nome como um argumento e retorna um ponteiro para um host que contém informações sobre esse host.
+O campo char * h_addr contém o endereço IP.
+Se essa estrutura for NULL, o sistema não poderá localizar um host com esse nome.
+Antigamente, essa função funcionava pesquisando um arquivo de sistema chamado / etc / hosts, mas com o crescimento explosivo da Internet, tornou-se impossível para os administradores do sistema manter esse arquivo atualizado. Assim, o mecanismo pelo qual essa função funciona é complexo, geralmente envolve a consulta de grandes bancos de dados em todo o país. A página do manual gethostbyname () (http://www.linuxhowtos.org/data/6/gethostbyname.txt) tem mais informações.
+
+bzero ((char *) & serv_addr, sizeof (serv_addr));
+serv_addr.sin_family = AF_INET;
+bcopy ((char *) servidor-> h_addr,
+      (char *) & serv_addr.sin_addr.s_addr,
+      server-> h_length);
+serv_addr.sin_port = htons (portno);
+Este código define os campos em serv_addr. Muito disso é o mesmo que no servidor. No entanto, como o campo server-> h_addr é uma string de caracteres, usamos a função:
+void bcopy (char * s1, char * s2, tamanho int)
+que copia bytes de tamanho de s1 para s2. ----
+
+if (conectar (sockfd, & serv_addr, sizeof (serv_addr)) <0)
+  erro ("conexão ERROR");
+A função de conexão é chamada pelo cliente para estabelecer uma conexão com o servidor. São necessários três argumentos, o descritor do arquivo de soquete, o endereço do host ao qual ele deseja se conectar (incluindo o número da porta) e o tamanho desse endereço. Esta função retorna 0 em sucesso e -1 se falhar. A página man do connect () (http://www.linuxhowtos.org/data/6/connect.txt) tem mais informações.
+Observe que o cliente precisa saber o número da porta do servidor, mas não precisa saber seu próprio número de porta. Isso é tipicamente atribuído pelo sistema quando a conexão é chamada.
+
+  printf ("Por favor, digite a mensagem:");
+  bzero (buffer, 256);
+  fgets (buffer, 255, stdin);
+  n = write (sockfd, buffer, strlen (buffer));
+  se (n <0)
+    erro ("ERROR writing to socket");
+  bzero (buffer, 256);
+  n = ler (sockfd, buffer, 255);
+  se (n <0)
+    erro ("ERROR reading from socket");
+  printf ("% s
+",amortecedor);
+  return 0;
+}
+O código restante deve ser razoavelmente claro. Ele solicita que o usuário insira uma mensagem, use fgets para ler a mensagem do stdin, grave a mensagem no soquete, leia a resposta do soquete e exiba essa resposta na tela.

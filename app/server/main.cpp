@@ -1,17 +1,10 @@
 #include "server.hpp"
 
-int main(void) 
+int main (int argc, char *argv[])
 {
-	socket_server soquete;
-	
+   	socket_server soquete;
 	MYSQL banco = soquete.conecta_bd();
-	
-	soquete.cria_s();
-	
-	soquete.conecta_s(banco);
-	
-	
-	soquete.encerra_s();  
-	
-	
+	int cli = soquete.cria_s();
+	soquete.conecta_s(banco, cli);
+	soquete.encerra_s();
 }

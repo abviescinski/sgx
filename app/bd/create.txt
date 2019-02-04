@@ -1,15 +1,17 @@
 create database banco;
-grant all on banco.* to amanda identified by "0909";
+grant all on banco.* to amanda identified by "Abv0909*";
 flush privileges;
 connect banco;
 
 create table cliente (`ID_Cliente` INT NOT NULL AUTO_INCREMENT PRIMARY KEY, `nome` VARCHAR(80) NOT NULL, `cpf` CHAR(11) NOT NULL UNIQUE, `telefone` VARCHAR(12) NOT NULL) ENGINE = innodb;
 
-create table conta ( `ID_Conta` INT NOT NULL AUTO_INCREMENT PRIMARY KEY, `senha` INT NOT NULL, `saldo` INT NOT NULL, `tipo` ENUM('Poupanca', 'Salario', 'Corrente') DEFAULT 'Corrente') ENGINE = innodb;
+create table conta ( `ID_Conta` INT NOT NULL AUTO_INCREMENT PRIMARY KEY, `senha` INT NOT NULL, `saldo` FLOAT DEFAULT "0" NOT NULL, `tipo` ENUM('Poupanca', 'Salario', 'Corrente') DEFAULT 'Corrente') ENGINE = innodb;
 
-ALTER TABLE `conta` ADD COLUMN `C_ID_Cliente` INT NOT NULL, ADD CONSTRAINT fk_ID_Cliente FOREIGN KEY (`ID_Cliente`) REFERENCES `cliente`(`ID_Cliente`);
+ALTER TABLE `conta` ADD COLUMN `C_ID_Cliente` INT NOT NULL, ADD CONSTRAINT fk_ID_Cliente FOREIGN KEY (`C_ID_Cliente`) REFERENCES `cliente`(`ID_Cliente`);
 
-ALTER TABLE `conta` CHANGE `ID_Cliente` `C_ID_Cliente` INT NOT NULL;
+//ALTER TABLE `conta` CHANGE `ID_Cliente` `C_ID_Cliente` INT NOT NULL;
+
+//ALTER TABLE `conta` CHANGE `saldo` `saldo` FLOAT DEFAULT "0" NOT NULL;
 
 francisco aparecido luna
 
@@ -25,3 +27,5 @@ SELECT cliente.ID_Cliente FROM cliente WHERE nome = ;
 SELECT cliente.nome FROM conta INNER JOIN cliente ON conta.ID_conta = msgs[0] AND conta.senha = AND conta.C_ID_Cliente = cliente.ID_Cliente;
 
 UPDATE `conta` SET `saldo` = linhas[0] WHERE `ID_Conta` = msgs[0];
+
+

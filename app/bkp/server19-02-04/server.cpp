@@ -24,7 +24,7 @@ MYSQL socket_server::conecta_bd(){
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-int socket_server::cria_s(){
+bool socket_server::cria_s(){
 
     /* Cria um soquete IPv4 */
     this->serverfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -53,6 +53,10 @@ int socket_server::cria_s(){
         return EXIT_FAILURE;
     }
     
+    return EXIT_SUCCESS;
+}
+
+void socket_server::conecta_s(MYSQL banco){
     /* Começa a esperar conexões de clientes */
     if(listen(this->serverfd, 1) == -1) {
         perror("Erro de escuta:");
@@ -64,17 +68,12 @@ int socket_server::cria_s(){
         (struct sockaddr *) &client, &client_len )) == -1) {
         perror("Não pode aceitar:");
     }
-    
-    return clientfd;
-}
-
-void socket_server::conecta_s(MYSQL banco, int clientfd){
 
     /* Cópias em buffer nossa mensagem de boas vindas */
     strcpy(buffer_serv, "****Inicio Cliente****\0");
 
     /* Envia a mensagem para o cliente */
-	if (send(clientfd, buffer_serv, strlen(buffer_serv), 0)) {
+	if (send(this->clientfd, buffer_serv, strlen(buffer_serv), 0)) {
         printf( "Cliente conectado, aguardando mensagem.\n");
 		menu_um tela_um;
 		
@@ -89,20 +88,20 @@ void socket_server::conecta_s(MYSQL banco, int clientfd){
         }
         
         if(strcmp(buffer_serv, "Criar") == 0){
-			tela_um.criar_conta(clientfd, banco);
+			tela_um.criar_conta(this->clientfd, banco);
         }else{
             if (strcmp(buffer_serv, "Remover") == 0){
-				tela_um.remover(clientfd, banco);					
+				tela_um.remover(this->clientfd, banco);					
 			}else{
 				if (strcmp(buffer_serv, "Acessar") == 0){
-					tela_um.acessar(clientfd, banco);					
+					tela_um.acessar(this->clientfd, banco);					
 				}else{
 					if (strcmp(buffer_serv, "Depositar") == 0){
-						tela_um.depositar(clientfd, banco);					
+						tela_um.depositar(this->clientfd, banco);					
 					}else{
 						if (strcmp(buffer_serv, "bye") == 0){
 							//Conexão do cliente Fechar 
-							close(clientfd);				
+							close(this->clientfd);				
 						}
 					}
 				}
