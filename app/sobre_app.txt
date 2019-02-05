@@ -1,6 +1,0 @@
-** Pré-requisitos ****
-Ter mysql instalado
-g++
-biblioteca libmysqlclient-dev
-
-	

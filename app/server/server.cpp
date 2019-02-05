@@ -27,15 +27,15 @@ MYSQL socket_server::conecta_bd(){
 int socket_server::cria_s(){
 
     /* Cria um soquete IPv4 */
-    this->serverfd = socket(AF_INET, SOCK_STREAM, 0);
-    if(this->serverfd == -1) {
+    this->serverfd = socket(AF_INET, SOCK_STREAM, 0);//ok
+    if(this->serverfd < 0) { //ok
         perror("Nao pode criar o servidor socket: ");
         return EXIT_FAILURE;
     }
     fprintf(stdout, "Servidor soquete criado com fd: %d\n", this->serverfd);
 
     /* Define as propriedades do soquete do servidor */
-    server.sin_family = AF_INET;
+    server.sin_family = AF_INET;//ok
     server.sin_port = htons(PORT);
     memset(server.sin_zero, 0x0, 8);
 
@@ -48,12 +48,14 @@ int socket_server::cria_s(){
     }
 
     /* ligar o soquete a uma porta */
-    if(bind(this->serverfd, (struct sockaddr*)&server, sizeof(server)) == -1 ) {
+    if(bind(this->serverfd, (struct sockaddr*)&server, sizeof(server)) < 0 ) {
         perror("Erro de ligacao do soquete:");
         return EXIT_FAILURE;
     }
     
-    /* Começa a esperar conexões de clientes */
+    //MUDA A PARTIR DAQUI
+    
+    /* Começa a esperar conexões de clientes, +/- ok */
     if(listen(this->serverfd, 1) == -1) {
         perror("Erro de escuta:");
     }

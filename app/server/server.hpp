@@ -1,16 +1,16 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
+#include <stdio.h> //ok
+#include <string.h> //ok
+#include <stdlib.h> //ok
 #include <iostream>
-#include <unistd.h>
+#include <unistd.h> //ok
 #include <errno.h>
 
-#include <sys/types.h>
-#include <sys/socket.h> 
-#include <netinet/in.h>
+#include <sys/types.h> //ok
+#include <sys/socket.h> //ok
+#include <netinet/in.h> //ok
 #include <netdb.h> 
 
-#include <mysql/mysql.h>
+#include <mysql/mysql.h> //ok
 
 #define HOST "localhost"
 #define USER "amanda"
@@ -37,6 +37,7 @@ class socket_server{
 	
 	struct sockaddr_in client, server;// Estruturas de soquete de cliente e servidor
 	int serverfd, clientfd;// Descritores de arquivo de cliente e servidor
+    // não tem buffer
     char buffer_serv[BUFFER_LENGTH];// Descritores de arquivo de cliente e servidor
 	
 };
