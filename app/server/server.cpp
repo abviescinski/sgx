@@ -12,82 +12,86 @@ MYSQL socket_server::conecta_bd(){
     mysql_init(&conexao);
     if ( mysql_real_connect(&conexao, HOST, USER, PASS, DB, 0, NULL, 0) )
     {
-          printf("Conectado na base de dados com sucesso!\n");
+          cout << "Conectado na base de dados com sucesso!\n";
           return conexao;
     }
     else
     {
-          printf("Falha de conexao\n");
-          printf("Erro %d : %s\n", mysql_errno(&conexao), mysql_error(&conexao));
+          cout << "Falha de conexao\n";
+          cerr << "Erro " << mysql_errno(&conexao) << " : " << mysql_error(&conexao);
     }
 
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-int socket_server::cria_s(){
-
-    /* Cria um soquete IPv4 */
-    this->serverfd = socket(AF_INET, SOCK_STREAM, 0);//ok
-    if(this->serverfd < 0) { //ok
-        perror("Nao pode criar o servidor socket: ");
+int socket_server::cria_s(MYSQL banco){
+	socket_server soc;
+    // Cria um soquete IPv4
+    this->serverfd = socket(AF_INET, SOCK_STREAM, 0);
+    if(this->serverfd < 0) {
+        cerr << "Nao pode criar o servidor socket: ";
         return EXIT_FAILURE;
     }
-    fprintf(stdout, "Servidor soquete criado com fd: %d\n", this->serverfd);
-
-    /* Define as propriedades do soquete do servidor */
-    server.sin_family = AF_INET;//ok
+    cout << "Servidor soquete criado com fd: " << this->serverfd << endl;
+	
+	bzero((char *)&server, sizeof(server));
+	
+    // Define as propriedades do soquete do servidor
+    server.sin_family = AF_INET;
+    server.sin_addr.s_addr = INADDR_ANY; 
     server.sin_port = htons(PORT);
-    memset(server.sin_zero, 0x0, 8);
-
-    /* Lidar com o erro da porta já em uso */
+   
+    // Lidar com o erro da porta já em uso
     int yes = 1;
-    if(setsockopt(this->serverfd, SOL_SOCKET, SO_REUSEADDR,
-                  &yes, sizeof(int)) == -1) {
-        perror("Erro de opcoes de soquete:");
+    if(setsockopt(this->serverfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
+        cerr <<"Erro de opcoes de soquete:";
         return EXIT_FAILURE;
     }
 
-    /* ligar o soquete a uma porta */
-    if(bind(this->serverfd, (struct sockaddr*)&server, sizeof(server)) < 0 ) {
-        perror("Erro de ligacao do soquete:");
+    // ligar o soquete a uma porta
+    if(bind(this->serverfd, (struct sockaddr*)&server, sizeof(server))<0){
+        cerr <<"Erro de ligacao do soquete:";
         return EXIT_FAILURE;
     }
     
-    //MUDA A PARTIR DAQUI
-    
-    /* Começa a esperar conexões de clientes, +/- ok */
-    if(listen(this->serverfd, 1) == -1) {
-        perror("Erro de escuta:");
+    // Começa a esperar conexões de clientes
+    if(listen(this->serverfd, 5) == -1) {
+        cerr<<"Erro de escuta:";
     }
-    fprintf(stdout, "Escutando na porta %d\n", PORT);
-
-    socklen_t client_len = sizeof(client);
-    if ((this->clientfd=accept(this->serverfd,
-        (struct sockaddr *) &client, &client_len )) == -1) {
-        perror("Não pode aceitar:");
-    }
-    
-    return clientfd;
+    cout << "Escutando na porta: " << PORT << endl;
+	while(true){
+		clientfd = accept(serverfd,(struct sockaddr *)&client, &client_len);
+		if (clientfd < 0) cerr <<"Não pode aceitar:";
+		id_process = fork();
+		if (id_process < 0) cerr <<"ERRO em fork()";
+		if (id_process ==0){
+			close(serverfd);
+			soc.conversa_s(banco, clientfd);
+			exit (0);
+		}
+		else close(clientfd);
+	}
+    return 0;
 }
 
-void socket_server::conecta_s(MYSQL banco, int clientfd){
+void socket_server::conversa_s(MYSQL banco, int clientfd){
 
     /* Cópias em buffer nossa mensagem de boas vindas */
-    strcpy(buffer_serv, "****Inicio Cliente****\0");
+    strcpy(buffer_serv, "****Inicio Cliente**** \0");
 
     /* Envia a mensagem para o cliente */
 	if (send(clientfd, buffer_serv, strlen(buffer_serv), 0)) {
-        printf( "Cliente conectado, aguardando mensagem.\n");
+        cout << "Cliente conectado, aguardando mensagem.\n";
 		menu_um tela_um;
 		
         // Zerando Buffers 
-        memset(buffer_serv, 0x0, BUFFER_LENGTH);
+        bzero(buffer_serv,BUFFER_LENGTH);
 
         // Recebe mensagem do cliente 
         int message_len;
         if((message_len = recv(clientfd, buffer_serv, BUFFER_LENGTH, 0)) > 0){
 			buffer_serv[message_len - 1] = '\0';
-            printf("Cliente disse:%s\n", buffer_serv);
+            cout <<"Cliente disse: "<< buffer_serv <<endl;
         }
         
         if(strcmp(buffer_serv, "Criar") == 0){
@@ -102,7 +106,7 @@ void socket_server::conecta_s(MYSQL banco, int clientfd){
 					if (strcmp(buffer_serv, "Depositar") == 0){
 						tela_um.depositar(clientfd, banco);					
 					}else{
-						if (strcmp(buffer_serv, "bye") == 0){
+						if (strcmp(buffer_serv, "Sair") == 0){
 							//Conexão do cliente Fechar 
 							close(clientfd);				
 						}
@@ -150,9 +154,9 @@ void menu_um::criar_conta(int client_fd, MYSQL banco){
 	
 	if (!res_banco) printf("Registros inseridos %d\n", mysql_affected_rows(&banco));
     else printf("Erro na inserção %d : %s\n", mysql_errno(&banco), mysql_error(&banco));
-     
-    memset(str_banco, 0x0, BUFFER_LENGTH);
     
+    bzero(str_banco,BUFFER_LENGTH);
+        
 	strcpy(str_banco, "SELECT cliente.ID_Cliente FROM cliente WHERE nome = '");
 	strcat(str_banco,dados_cliente[0]);
 	strcat(str_banco,"';");
@@ -167,7 +171,7 @@ void menu_um::criar_conta(int client_fd, MYSQL banco){
 		}
 	}
 	
-	memset(str_banco, 0x0, BUFFER_LENGTH);
+	bzero(str_banco,BUFFER_LENGTH);
 	
     strcpy(str_banco,"INSERT INTO conta(senha, saldo, tipo, C_ID_Cliente) values('");
 	strcat(str_banco, dados_cliente[3]);
@@ -181,12 +185,12 @@ void menu_um::criar_conta(int client_fd, MYSQL banco){
 	
 	if (!res_banco){
 		printf("Registros inseridos %d\n", mysql_affected_rows(&banco));
-		memset(str_banco, 0x0, BUFFER_LENGTH);
+		bzero(str_banco,BUFFER_LENGTH);
 		strcpy(str_banco, "SELECT conta.ID_Conta FROM conta INNER JOIN cliente ON cliente.ID_Cliente = ");
 		strcat(str_banco,dados_banco[0]);
 		strcat(str_banco," AND conta.C_ID_Cliente = cliente.ID_Cliente;");
 
-		memset(dados_banco, 0x0, BUFFER_LENGTH);
+		bzero(dados_banco,BUFFER_LENGTH);
 		if (mysql_query(&banco,str_banco)){
 			printf("Erro: %s\n",mysql_error(&banco));
 		}else{
@@ -210,8 +214,8 @@ void menu_um::remover(int client_fd, MYSQL banco){
 void menu_um::acessar(int client_fd, MYSQL banco){
 	send(client_fd, "Voce selecionou 'Acessar a conta'.", BUFFER_LENGTH, 0);
 	
-	memset(str_banco, 0x0, BUFFER_LENGTH);
-	memset(buffer_respostas, 0x0, BUFFER_LENGTH);
+	bzero(str_banco,BUFFER_LENGTH);
+	bzero(buffer_respostas,BUFFER_LENGTH);
 	menu_dois tela_dois;
 	
 	for (int i = 0; i < 2; i++){
@@ -294,7 +298,7 @@ void menu_um::depositar(int client_fd, MYSQL banco){
 	recv(client_fd, buffer_respostas, BUFFER_LENGTH, 0);
 	
 	if (strcmp(buffer_respostas, "sim") == 0){
-		memset(str_banco, 0x0, BUFFER_LENGTH);		
+		bzero(str_banco,BUFFER_LENGTH);		
 		strcpy(str_banco, "UPDATE `conta` SET `saldo` = saldo + ");
 		strcat(str_banco, dados_cliente[1]);
 		strcat(str_banco, " WHERE `ID_Conta` = ");
@@ -317,7 +321,7 @@ void menu_dois::obtem_saldo(int client_fd, MYSQL banco, char dados_acesso[3][BUF
 	send(client_fd, "Você selecionou 'Saldo'.", BUFFER_LENGTH, 0);
 	
 	//monta a string de selecao para descobrir o saldo e envia ao cliente
-	memset(str_banco, 0x0, BUFFER_LENGTH);
+	bzero(str_banco,BUFFER_LENGTH);
 	strcpy(str_banco, "SELECT conta.saldo FROM conta WHERE conta.ID_conta = ");
 	strcat(str_banco, dados_acesso[0]);
 	strcat(str_banco, ";");
@@ -341,7 +345,7 @@ void menu_dois::sacar(int client_fd, MYSQL banco, char dados_acesso[3][BUFFER_LE
 	
 	//apresentar o saldo primeiro e depois perguntar qual valor deseja transferir
 	//monta a string de selecao para descobrir o saldo e envia ao cliente
-	memset(str_banco, 0x0, BUFFER_LENGTH);
+	bzero(str_banco,BUFFER_LENGTH);
 	strcpy(str_banco, "SELECT conta.saldo FROM conta WHERE conta.ID_conta = ");
 	strcat(str_banco, dados_acesso[0]);
 	strcat(str_banco, ";");
@@ -360,7 +364,7 @@ void menu_dois::sacar(int client_fd, MYSQL banco, char dados_acesso[3][BUFFER_LE
 	if((contador = recv(client_fd, dados_cliente, BUFFER_LENGTH, 0)) > 0){
         printf("Cliente disse:%s\n", dados_cliente[0]);
 		
-		memset(str_banco, 0x0, BUFFER_LENGTH);		
+		bzero(str_banco,BUFFER_LENGTH);		
 		strcpy(str_banco, "UPDATE `conta` SET `saldo` = saldo - ");
 		strcat(str_banco, dados_cliente[0]);
 		strcat(str_banco, " WHERE `ID_Conta` = ");
@@ -371,7 +375,7 @@ void menu_dois::sacar(int client_fd, MYSQL banco, char dados_acesso[3][BUFFER_LE
 			printf("Registros alterados %d\n", mysql_affected_rows(&banco));
 			//apresentar o saldo primeiro e depois perguntar qual valor deseja transferir
 			//monta a string de selecao para descobrir o saldo e envia ao cliente
-			memset(str_banco, 0x0, BUFFER_LENGTH);
+			bzero(str_banco,BUFFER_LENGTH);
 			strcpy(str_banco, "SELECT conta.saldo FROM conta WHERE conta.ID_conta = ");
 			strcat(str_banco, dados_acesso[0]);
 			strcat(str_banco, ";");
@@ -398,7 +402,7 @@ void menu_dois::transferir(int client_fd, MYSQL banco, char dados_acesso[3][BUFF
 	
 	//apresentar o saldo primeiro e depois perguntar qual valor deseja transferir
 	//monta a string de selecao para descobrir o saldo e envia ao cliente
-	memset(str_banco, 0x0, BUFFER_LENGTH);
+	bzero(str_banco,BUFFER_LENGTH);
 	strcpy(str_banco, "SELECT conta.saldo FROM conta WHERE conta.ID_conta = ");
 	strcat(str_banco, dados_acesso[0]);
 	strcat(str_banco, ";");
@@ -445,7 +449,7 @@ void menu_dois::transferir(int client_fd, MYSQL banco, char dados_acesso[3][BUFF
 	
 	if (strcmp(buffer_respostas, "sim") == 0){
 		//insere valor na conta do beneficiado
-		memset(str_banco, 0x0, BUFFER_LENGTH);		
+		bzero(str_banco,BUFFER_LENGTH);		
 		strcpy(str_banco, "UPDATE `conta` SET `saldo` = saldo + ");
 		strcat(str_banco, dados_cliente[1]);
 		strcat(str_banco, " WHERE `ID_Conta` = ");
@@ -456,7 +460,7 @@ void menu_dois::transferir(int client_fd, MYSQL banco, char dados_acesso[3][BUFF
 		else printf("Erro na inserção %d : %s\n", mysql_errno(&banco), mysql_error(&banco));
 		
 		//descontar o valor transferido da conta atual
-		memset(str_banco, 0x0, BUFFER_LENGTH);		
+		bzero(str_banco,BUFFER_LENGTH);		
 		strcpy(str_banco, "UPDATE `conta` SET `saldo` = saldo - ");
 		strcat(str_banco, dados_cliente[1]);
 		strcat(str_banco, " WHERE `ID_Conta` = ");
@@ -468,7 +472,7 @@ void menu_dois::transferir(int client_fd, MYSQL banco, char dados_acesso[3][BUFF
 		
 		//apresentar o saldo
 		//monta a string de selecao para descobrir o saldo e envia ao cliente
-		memset(str_banco, 0x0, BUFFER_LENGTH);
+		bzero(str_banco,BUFFER_LENGTH);
 		strcpy(str_banco, "SELECT conta.saldo FROM conta WHERE conta.ID_conta = ");
 		strcat(str_banco, dados_acesso[0]);
 		strcat(str_banco, ";");

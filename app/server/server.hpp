@@ -1,14 +1,14 @@
 #include <stdio.h> //ok
 #include <string.h> //ok
 #include <stdlib.h> //ok
-#include <iostream>
 #include <unistd.h> //ok
-#include <errno.h>
-
 #include <sys/types.h> //ok
 #include <sys/socket.h> //ok
 #include <netinet/in.h> //ok
+
 #include <netdb.h> 
+#include <iostream> //ok
+#include <errno.h> //ok
 
 #include <mysql/mysql.h> //ok
 
@@ -29,15 +29,16 @@ class socket_server{
 	
 	public:
 		socket_server();
-		int cria_s();
-		void conecta_s(MYSQL banco, int clientefd);
+		int cria_s(MYSQL banco);
+		void conversa_s(MYSQL banco, int clientefd);
 		void encerra_s();
 		
 		MYSQL conecta_bd();
 	
 	struct sockaddr_in client, server;// Estruturas de soquete de cliente e servidor
+	socklen_t client_len = sizeof(client); //armazena o tamanho do endereço do cliente. Isso é necessário para a chamada do sistema aceito.
 	int serverfd, clientfd;// Descritores de arquivo de cliente e servidor
-    // não tem buffer
+    int id_process; //resposta é o valor de retorno para as chamadas read () e write (); isto é, contém o número de caracteres lidos ou escritos.
     char buffer_serv[BUFFER_LENGTH];// Descritores de arquivo de cliente e servidor
 	
 };

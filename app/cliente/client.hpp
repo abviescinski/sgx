@@ -1,14 +1,15 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <iostream>
-#include <errno.h>
+#include <stdio.h> //ok
+#include <stdlib.h> //ok
+#include <string.h> //ok
+#include <iostream> //ok
+#include <errno.h> //ok
 #include <stdbool.h>
-#include <unistd.h>
+#include <unistd.h> //ok
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
+#include <netdb.h> //presente no cliente*
+#include <sys/types.h> //ok
+#include <sys/socket.h> //ok
+#include <netinet/in.h> //ok
 #include <arpa/inet.h>
 
 #define PORT 4242 //porta do servidor
@@ -21,14 +22,11 @@ class socket_cliente{
 
 	public:
 		socket_cliente();
-		int inicia_conexao();
+		int inicia_conexao(int argc, char **argv);
 		void fecha_conexao();
-     
+    
+    struct hostent *endereco;//define o endereço ip do servidor
     struct sockaddr_in server;//Server socket
-    int sockfd; //Descritor de arquivo do cliente para o soquete local 
-
-    int len = sizeof(server);
-    int slen;
-
+    int sockfd, res_ser; //Descritor de arquivo do cliente para o soquete local 
     char buffer[LEN];//Buffer
 };

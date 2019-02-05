@@ -5,8 +5,8 @@ menu_um::menu_um(){
 };
 
 void menu_um::criar_conta(int canal){
-	memset(opcao, 0x0, LEN);
-	memset(buffer_client, 0x0, LEN);
+	bzero(opcao,LEN);
+	bzero(buffer_client,LEN);
 	
 	//envia a opcao escolhida para o servidor
 	strcpy(opcao, "Criar \0");
@@ -32,8 +32,8 @@ void menu_um::criar_conta(int canal){
 		cout << "Senha para conta: ";
 		cin.getline (cliente[3],LEN);
 		
-		cout << endl << "Qual a finalidade da conta? "<< endl<< "	1 - Salario"<<endl;
-		cout << "	2 - Poupanca"<<endl<<"	3 - Corrente" << endl<<"Digite o numero correspondente: ";
+		cout << endl << "Qual a finalidade da conta? \n"<< "	1 - Salario\n";
+		cout << "	2 - Poupanca\n"<< "	3 - Corrente\n" << "Digite o numero correspondente: ";
 		cin >> tipo;
 		
 		switch (tipo){
@@ -47,22 +47,22 @@ void menu_um::criar_conta(int canal){
 				strcpy(cliente[4], "Corrente");
 				break;
 			default:
-				printf("Opcao incorreta. Encerrando serviço.");
+				cout << "Opcao incorreta. Encerrando serviço.\n";
 		}	
 		for(int i = 0; i < 5; i++){
 			send(canal, cliente[i], LEN, 0);
 		}
-		memset(buffer_client, 0x0, LEN);
+		bzero(buffer_client,LEN);
 		if((resposta_servidor = recv(canal, buffer_client, LEN, 0)) > 0){
 			buffer_client[resposta_servidor] = '\0';
-			cout<<"Conta criada com sucesso! Numero: " << buffer_client<< endl;
+			cout<<"Conta criada com sucesso! \n Numero: " << buffer_client<< endl;
 		}	
 	}
 };
 
 void menu_um::remover(int canal){
-	memset(opcao, 0x0, LEN);
-	memset(buffer_client, 0x0, LEN);
+	bzero(opcao,LEN);
+	bzero(buffer_client,LEN);
 
 	//envia a opcao escolhida para o servidor
 	strcpy(opcao, "Remover \0");
@@ -81,9 +81,9 @@ void menu_um::remover(int canal){
 };
 
 void menu_um::acessar(int canal){
-	memset(opcao, 0x0, LEN);
-	memset(buffer_client, 0x0, LEN);
-	memset(conta, 0x0, LEN);
+	bzero(opcao,LEN);
+	bzero(buffer_client,LEN);
+	bzero(conta,LEN);
 	menu_dois tela_dois;
 	
 	//envia a opcao escolhida para o servidor
@@ -105,16 +105,16 @@ void menu_um::acessar(int canal){
 		}
 		tipo = 0;
 		resposta_servidor = 0;
-		memset(buffer_client, 0x0, LEN);
+		bzero(buffer_client,LEN);
 		
 		if((resposta_servidor = recv(canal, buffer_client, LEN, 0)) > 0){
 			cout << endl << endl; // depois colocar uma limpeza de tela aqui
-			cout <<"Seja bem vindo(a) "<< buffer_client << "!" <<endl;
-			cout <<"Selecione a opção desejada:" << endl;
-			cout <<"	1 - Ver saldo." << endl;
-			cout <<"	2 - Realizar saque." << endl;
-			cout <<"	3 - Realizar transferencia." << endl;
-			cout <<"	0 - Sair e encerrar conexao." << endl;
+			cout <<"Seja bem vindo(a) "<< buffer_client << "! \n";
+			cout <<"Selecione a opção desejada: \n";
+			cout <<"	1 - Ver saldo.\n";
+			cout <<"	2 - Realizar saque.\n";
+			cout <<"	3 - Realizar transferencia.\n";
+			cout <<"	0 - Sair e encerrar conexao.\n";
 			cin >> tipo;
 			
 			switch (tipo){
@@ -146,8 +146,8 @@ void menu_um::acessar(int canal){
 };
 
 void menu_um::depositar(int canal){
-	memset(opcao, 0x0, LEN);
-	memset(buffer_client, 0x0, LEN);
+	bzero(opcao,LEN);
+	bzero(buffer_client,LEN);
 	//envia a opcao escolhida para o servidor
 	strcpy(opcao, "Depositar \0");
 	send(canal, opcao, strlen(opcao), 0);
@@ -166,9 +166,9 @@ void menu_um::depositar(int canal){
 			cout << conta[i] << endl;
 			send(canal, conta[i], LEN, 0);
 		}
-		memset(opcao, 0x0, LEN);
+		bzero(opcao,LEN);
 		recv(canal, buffer_client, LEN, 0);
-		cout << "Nome do beneficiado: " << buffer_client << ". Digite sim para confirmar. "<< endl;
+		cout << "Nome do beneficiado: " << buffer_client << ". Digite sim para confirmar.\n";
 		cin.getline (opcao,4);
 		send(canal, opcao, 4, 0);
 	}
@@ -180,41 +180,41 @@ menu_dois::menu_dois(){
 };
 
 void menu_dois::obter_saldo(int canal){
-	memset(buffer_client, 0x0, LEN);
+	bzero(buffer_client,LEN);
 	resposta_servidor = 0;
 	if((resposta_servidor = recv(canal, buffer_client, LEN, 0)) > 0){
 		buffer_client[resposta_servidor] = '\0';
 		cout<< buffer_client<< endl;
     }
 	
-	memset(buffer_client, 0x0, LEN);
+	bzero(buffer_client,LEN);
 	resposta_servidor = 0;
 	if((resposta_servidor = recv(canal, buffer_client, LEN, 0)) > 0){
 		buffer_client[resposta_servidor] = '\0';
-		cout<< "O valor atual é R$" << buffer_client<< endl;
+		cout<< "O saldo atual é R$" << buffer_client<< endl;
     }
 };
 
 void menu_dois::sacar(int canal){
-	memset(buffer_client, 0x0, LEN);
+	bzero(buffer_client,LEN);
 	resposta_servidor = 0;
 	if((resposta_servidor = recv(canal, buffer_client, LEN, 0)) > 0){
 		buffer_client[resposta_servidor] = '\0';
 		cout<< buffer_client<< endl;
     }
     
-    memset(buffer_client, 0x0, LEN);
+    bzero(buffer_client,LEN);
 	resposta_servidor = 0;
 	if((resposta_servidor = recv(canal, buffer_client, LEN, 0)) > 0){
 		buffer_client[resposta_servidor] = '\0';
-		cout<< "O valor atual é R$" << buffer_client<< endl;
+		cout<< "O saldo atual é R$" << buffer_client<< endl;
     }
     cin.ignore();
     cout << "Digite o valor desejado: ";
 	cin.getline (conta[0],LEN);
 	send(canal, conta[0], LEN, 0);
 	
-	memset(buffer_client, 0x0, LEN);
+	bzero(buffer_client,LEN);
 	resposta_servidor = 0;
 	if((resposta_servidor = recv(canal, buffer_client, LEN, 0)) > 0){
 		cout<<"Valor retirado com sucesso!"<< endl;
@@ -223,18 +223,18 @@ void menu_dois::sacar(int canal){
 };
 
 void menu_dois::transferir(int canal){
-	memset(buffer_client, 0x0, LEN);
+	bzero(buffer_client,LEN);
 	resposta_servidor = 0;
 	if((resposta_servidor = recv(canal, buffer_client, LEN, 0)) > 0){
 		buffer_client[resposta_servidor] = '\0';
 		cout<< buffer_client<< endl;
     }
     
-    memset(buffer_client, 0x0, LEN);
+    bzero(buffer_client,LEN);
 	resposta_servidor = 0;
 	if((resposta_servidor = recv(canal, buffer_client, LEN, 0)) > 0){
 		buffer_client[resposta_servidor] = '\0';
-		cout<< "O valor atual é R$"<< buffer_client<< endl;
+		cout<< "O saldo atual é R$"<< buffer_client<< endl;
     }
     
     cin.ignore();
@@ -247,7 +247,7 @@ void menu_dois::transferir(int canal){
 		send(canal, conta[i], LEN, 0);
 	}
 	
-	memset(opcao, 0x0, LEN);
+	bzero(opcao,LEN);
 	recv(canal, buffer_client, LEN, 0);
 	cout << "Nome do beneficiado: " << buffer_client << ". Digite sim para finalizar a transferencia. "<< endl;
 	cin.getline (opcao,LEN);
@@ -260,7 +260,7 @@ void menu_dois::transferir(int canal){
 };
 
 void menu_dois::extrato(int canal){
-	memset(buffer_client, 0x0, LEN);
+	bzero(buffer_client,LEN);
 	resposta_servidor = 0;
 	if((resposta_servidor = recv(canal, buffer_client, LEN, 0)) > 0){
 		buffer_client[resposta_servidor] = '\0';

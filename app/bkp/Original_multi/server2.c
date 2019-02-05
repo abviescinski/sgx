@@ -11,6 +11,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
+#define BUFFER_LENGTH 128
+
 void dostuff(int); /* function prototype */
 void error(const char *msg)
 {
@@ -21,7 +23,7 @@ void error(const char *msg)
 int main(int argc, char *argv[])
 {
      int serverfd, clientfd, portno, pid;
-     socklen_t clilen;
+     socklen_t client_len;
      struct sockaddr_in server, client;
 
      if (argc < 2) {
@@ -35,26 +37,25 @@ int main(int argc, char *argv[])
         
      //diferente   
      bzero((char *) &server, sizeof(server));
-     portno = atoi(argv[1]);
+     portno = atoi(argv[1]); // não precisa pois é a conversao da porta passada como parametro
      //
      server.sin_family = AF_INET;//ok
      
      //diferente 
-     server.sin_addr.s_addr = INADDR_ANY;
-     server.sin_port = htons(portno);
+     server.sin_addr.s_addr = INADDR_ANY; //ok
+     server.sin_port = htons(portno); //ok
      //
      
-     if (bind(serverfd, (struct sockaddr *) &server,
-              sizeof(server)) < 0) 
+     if (bind(serverfd, (struct sockaddr *) &server, sizeof(server)) < 0) 
               error("ERROR on binding");//+/- ok
      
      //MUDA A PARTIR DAQUI
          
      listen(serverfd,5);
-     clilen = sizeof(client);
+     client_len = sizeof(client);
      while (1) {
          clientfd = accept(serverfd, 
-               (struct sockaddr *) &client, &clilen);
+               (struct sockaddr *) &client, &client_len);
          if (clientfd < 0) 
              error("ERROR on accept");
          pid = fork();
@@ -79,12 +80,12 @@ int main(int argc, char *argv[])
 void dostuff (int sock)
 {
    int n;
-   char buffer[256];
+   char buffer_serv[BUFFER_LENGTH];
       
-   bzero(buffer,256);
-   n = read(sock,buffer,255);
+   bzero(buffer_serv,BUFFER_LENGTH);
+   n = read(sock,buffer_serv,BUFFER_LENGTH);
    if (n < 0) error("ERROR reading from socket");
-   printf("Here is the message: %s\n",buffer);
-   n = write(sock,"I got your message",18);
+   printf("Here is the message: %s\n",buffer_serv);
+   n = write(sock,"I got your message",BUFFER_LENGTH);
    if (n < 0) error("ERROR writing to socket");
 }

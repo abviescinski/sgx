@@ -18,20 +18,11 @@ Os sockets stream usam o TCP (Transmission Control Protocol), que é um protocol
 
 Os exemplos neste tutorial usarão sockets no domínio da Internet usando o protocolo TCP
 
-Código de amostra
-C código para um cliente e servidor muito simples são fornecidos para você. Eles se comunicam usando sockets de fluxo no domínio da Internet. O código é descrito em detalhes abaixo. No entanto, antes de ler as descrições e examinar o código, você deve compilar e executar os dois programas para ver o que eles fazem.
-
-server.c
-client.c
-
-Faça o download deles em arquivos chamados server.c e client.c e os compile separadamente em dois executáveis ​​chamados servidor e cliente.
-
 Eles provavelmente não precisarão de nenhum sinalizador de compilação especial, mas em alguns sistemas solaris você pode precisar se vincular à biblioteca de soquetes anexando -lsocket ao seu comando de compilação.
 
 Idealmente, você deve executar o cliente e o servidor em hosts separados na Internet. Inicie o servidor primeiro. Suponha que o servidor esteja sendo executado em uma máquina chamada cheerios. Quando você executa o servidor, você precisa passar o número da porta como um argumento. Você pode escolher qualquer número entre 2000 e 65535. Se essa porta já estiver em uso nessa máquina, o servidor informará isso e sairá. Se isso acontecer, basta escolher outra porta e tentar novamente. Se a porta estiver disponível, o servidor bloqueará até receber uma conexão do cliente. Não se assuste se o servidor não fizer nada;
 
 Não é suposto fazer nada até que uma conexão seja feita.
-
 
 Aqui está uma linha de comando típica:
 
@@ -42,7 +33,6 @@ Para executar o cliente, é necessário passar dois argumentos, o nome do host n
 Aqui está a linha de comando para se conectar ao servidor descrito acima:
 
 cliente cheerios 51717
-
 
 O cliente solicitará que você insira uma mensagem.
 Se tudo funcionar corretamente, o servidor exibirá sua mensagem no stdout, enviará uma mensagem de confirmação ao cliente e terminará.
