@@ -5,7 +5,6 @@
 #define USER "guest"
 #define PASS "guest"
 #define DB "teste"
-
 int main(void)
 {
    MYSQL conexao;
