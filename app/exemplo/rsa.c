@@ -199,13 +199,13 @@ int main(void){
 			
 			//Lê a mensagem a ser criptografada
 			printf("\nDigite uma mensagem\n");
-			
+			memset(mensagem, 0x0, 100);
 			//Limpa o buuffer
 			scanf("\n");
 			fgets(mensagem, 100, stdin);
-			for(int c = 0; c < 100; c++){
-				printf("%i", c);
-			}
+			//for(int c = 0; c < 100; c++){
+				printf("%s\n", mensagem);
+			//}
 			/*
 			printf("mensagem c: %i \n", mensagemC);
 			//Decodifica a mensagem
