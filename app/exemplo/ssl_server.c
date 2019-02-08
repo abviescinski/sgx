@@ -17,17 +17,17 @@ int create_socket(int port)
 
     s = socket(AF_INET, SOCK_STREAM, 0);
     if (s < 0) {
-	perror("Unable to create socket");
+	perror("Não é possível criar soquete");
 	exit(EXIT_FAILURE);
     }
 
     if (bind(s, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
-	perror("Unable to bind");
+	perror("Não é possível ligar (bind).");
 	exit(EXIT_FAILURE);
     }
 
     if (listen(s, 1) < 0) {
-	perror("Unable to listen");
+	perror("Não é possível ouvir.");
 	exit(EXIT_FAILURE);
     }
 
@@ -54,7 +54,7 @@ SSL_CTX *create_context()
 
     ctx = SSL_CTX_new(method);
     if (!ctx) {
-	perror("Unable to create SSL context");
+	perror("Não é possível criar o contexto SSL.\n");
 	ERR_print_errors_fp(stderr);
 	exit(EXIT_FAILURE);
     }
@@ -66,13 +66,13 @@ void configure_context(SSL_CTX *ctx)
 {
     SSL_CTX_set_ecdh_auto(ctx, 1);
 
-    /* Set the key and cert */
-    if (SSL_CTX_use_certificate_file(ctx, "cert.pem", SSL_FILETYPE_PEM) <= 0) {
+    /* Definir a chave e cert */
+    if (SSL_CTX_use_certificate_file(ctx, "certificate.pem", SSL_FILETYPE_PEM) <= 0) {
         ERR_print_errors_fp(stderr);
 	exit(EXIT_FAILURE);
     }
 
-    if (SSL_CTX_use_PrivateKey_file(ctx, "key.pem", SSL_FILETYPE_PEM) <= 0 ) {
+    if (SSL_CTX_use_PrivateKey_file(ctx, "privkey.pem", SSL_FILETYPE_PEM) <= 0 ) {
         ERR_print_errors_fp(stderr);
 	exit(EXIT_FAILURE);
     }
@@ -90,16 +90,16 @@ int main(int argc, char **argv)
 
     sock = create_socket(4433);
 
-    /* Handle connections */
+    /* Lidar com conexões */
     while(1) {
         struct sockaddr_in addr;
         uint len = sizeof(addr);
         SSL *ssl;
-        const char reply[] = "test\n";
+        const char reply[] = "teste\n";
 
         int client = accept(sock, (struct sockaddr*)&addr, &len);
         if (client < 0) {
-            perror("Unable to accept");
+            perror("Não é possivel aceitar conexão");
             exit(EXIT_FAILURE);
         }
 

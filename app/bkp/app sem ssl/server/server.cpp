@@ -22,48 +22,10 @@ MYSQL socket_server::conecta_bd(){
     }
 
 }
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-SSL_CTX* InitServerCTX(void)
-{   const SSL_METHOD *method;
-    SSL_CTX *ctx;
- 
-    OpenSSL_add_all_algorithms();  // carregar e registrar todos os criptos, etc.
-    SSL_load_error_strings(); // carregar todas as mensagens de erro
-    method = TLS_server_method();  // criar nova instância de método de servidor
-    ctx = SSL_CTX_new(method);   // criar novo contexto a partir do método
-    if ( ctx == NULL )
-    {
-        ERR_print_errors_fp(stderr);
-        abort();
-    }
-    return ctx;
-}
-
-void LoadCertificates(SSL_CTX* ctx, char* CertFile, char* KeyFile)
-{
-    // definir o certificado local do CertFile 
-    if (SSL_CTX_use_certificate_file(ctx, CertFile, SSL_FILETYPE_PEM)<=0)
-    {
-        ERR_print_errors_fp(stderr);
-        abort();
-    }
-    // definir a chave privada do KeyFile (pode ser o mesmo que CertFile) 
-    if (SSL_CTX_use_PrivateKey_file(ctx, KeyFile, SSL_FILETYPE_PEM)<=0)
-    {
-        ERR_print_errors_fp(stderr);
-        abort();
-    }
-    // verifica chave privada 
-    if (!SSL_CTX_check_private_key(ctx))
-    {
-        fprintf(stderr, "Chave privada não corresponde ao certificado público\n");
-        abort();
-    }
-}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int socket_server::cria_s(MYSQL banco){
-
+	socket_server soc;
     // Cria um soquete IPv4
     this->serverfd = socket(PF_INET, SOCK_STREAM, 0);
     if(this->serverfd < 0) {
@@ -97,11 +59,25 @@ int socket_server::cria_s(MYSQL banco){
         cerr<<"Erro de escuta:";
     }
     cout << "Escutando na porta: " << PORT << endl;
-
-    return serverfd;
+    
+    //finaliza aqui a função socket 
+    
+	while(true){
+		clientfd = accept(serverfd,(struct sockaddr *)&client, &client_len);
+		if (clientfd < 0) cerr <<"Não pode aceitar:";
+		id_process = fork();
+		if (id_process < 0) cerr <<"ERRO em fork()";
+		if (id_process ==0){
+			close(serverfd);
+			soc.conversa_s(banco, clientfd);
+			exit (0);
+		}
+		else close(clientfd);
+	}
+    return 0;
 }
 
-void socket_server::conversa_s(MYSQL banco, int clientfd, SSL *ssl){
+void socket_server::conversa_s(MYSQL banco, int clientfd){
 
     /* Cópias em buffer nossa mensagem de boas vindas */
     strcpy(buffer_serv, "****Inicio Cliente**** \0");

@@ -10,13 +10,13 @@
 //This code (theoretically) writes "Hello World, 123" to a socket over a secure TLS connection
 //compiled with g++ -Wall -o client.out client.cpp -L/usr/lib -lssl -lcrypto
 //Based off of: https://www.cs.utah.edu/~swalton/listings/articles/ssl_client.c
-//The OpenConnection method was heavily based on the answer to this post: https://stackoverflow.com/questions/52727565/client-in-c-use-gethostbyname-or-getaddrinfo
+//Some of the code was taken from this post: https://stackoverflow.com/questions/52727565/client-in-c-use-gethostbyname-or-getaddrinfo
 
 const int ERROR_STATUS = -1;
 
 SSL_CTX *InitSSL_CTX(void)
 {
-    const SSL_METHOD *method = TLS_client_method(); /* Create new client-method instance */
+    const SSL_METHOD *method = SSLv23_client_method()//TLS_client_method(); /* Create new client-method instance */
     SSL_CTX *ctx = SSL_CTX_new(method);
 
     if (ctx == nullptr)
@@ -37,7 +37,7 @@ int OpenConnection(const char *hostname, const char *port)
     }
 
     struct addrinfo hints = {0}, *addrs;
-    hints.ai_family = AF_INET;
+    hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
 
@@ -122,6 +122,7 @@ int main(int argc, char const *argv[])
     }
 
     printf("Connected with %s encryption\n", SSL_get_cipher(ssl));
+    DisplayCerts(ssl);
     const char *chars = "Hello World, 123!";
     SSL_write(ssl, chars, strlen(chars));
     SSL_free(ssl);

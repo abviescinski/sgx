@@ -1,20 +1,16 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <iostream>
-#include <unistd.h>
-#include <errno.h>
+#include <stdio.h> //ok
+#include <string.h> //ok
+#include <stdlib.h> //ok
+#include <unistd.h> //ok
+#include <sys/types.h> //ok
+#include <sys/socket.h> //ok
+#include <netinet/in.h> //ok
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <netdb.h> 
+#include <iostream> //ok
+#include <errno.h> //ok
 
-#include <mysql/mysql.h>
-
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include <resolv.h>
+#include <mysql/mysql.h> //ok
 
 #define HOST "localhost"
 #define USER "amanda"
@@ -34,22 +30,12 @@ class socket_server{
 	public:
 		socket_server();
 		int cria_s(MYSQL banco);
-		void conversa_s(MYSQL banco, int clientefd, SSL *ssl);
+		void conversa_s(MYSQL banco, int clientefd);
 		void encerra_s();
 		
 		MYSQL conecta_bd();
-		
-		//Funções ssl
-		SSL_CTX* InitServerCTX(void);
-		void LoadCertificates(SSL_CTX* ctx, char* CertFile, char* KeyFile);
-		void ShowCerts(SSL* ssl);
-		void Servlet(SSL* ssl);
 	
-	
-	int serverfd; // Descritores de arquivo de cliente e servidor (serverfd usada em cria_s)
-	struct sockaddr_in server; // Estruturas de soquete de cliente e servidor (server usada em cria_s)
-	
-	struct sockaddr_in client, server;
+	struct sockaddr_in client, server;// Estruturas de soquete de cliente e servidor
 	socklen_t client_len = sizeof(client); //armazena o tamanho do endereço do cliente. Isso é necessário para a chamada do sistema aceito.
 	int serverfd, clientfd;// Descritores de arquivo de cliente e servidor
     int id_process; //resposta é o valor de retorno para as chamadas read () e write (); isto é, contém o número de caracteres lidos ou escritos.
