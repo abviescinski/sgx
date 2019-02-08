@@ -4,10 +4,48 @@ socket_cliente::socket_cliente(){
 	
 };
 
-int socket_cliente::inicia_conexao(int argc, char **argv){
+SSL_CTX* socket_cliente::InitCTX(void)
+{   const SSL_METHOD *method;
+    SSL_CTX *ctx;
+ 
+    OpenSSL_add_all_algorithms(); // carregar e registrar todos os criptos, etc.
+    SSL_load_error_strings();  // carregar todas as mensagens de erro
+    method = TLSv1_2_server_method();// criar nova instância de método de cliente
+    ctx = SSL_CTX_new(method);  // criar novo contexto a partir do método
+    if ( ctx == NULL )
+    {
+        ERR_print_errors_fp(stderr);
+        abort();
+    }
+    cout << "finalizou ctx\n";
+    return ctx;
+}
+ 
+void socket_cliente::ShowCerts(SSL* ssl)
+{   X509 *cert;
+    char *line;
+ 
+    cert = SSL_get_peer_certificate(ssl); // obter o certificado do servidor
+    if ( cert != NULL )
+    {
+        printf("Certificados de servidor:\n");
+        line = X509_NAME_oneline(X509_get_subject_name(cert), 0, 0);
+        printf("Sujeito: %s\n", line);
+        free(line);       
+        line = X509_NAME_oneline(X509_get_issuer_name(cert), 0, 0);
+        printf("Emissora: %s\n", line);
+        free(line);       
+        X509_free(cert); // liberar a cópia do certificado malloc
+    }
+    else
+        printf("Info: nenhum configurado.\n");
+}
 
-    // Cria um soquete para o cliente
-    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+
+//////////////////////////////////////////////////////////////////////////////////////
+int socket_cliente::inicia_conexao(int argc, char **argv){
+	// Cria um soquete para o cliente
+    if ((sockfd = socket(PF_INET, SOCK_STREAM, 0)) == -1) {
         cerr << "Erro na criação do soquete do cliente.";
     }
         
@@ -27,15 +65,11 @@ int socket_cliente::inicia_conexao(int argc, char **argv){
     // Tenta se conectar ao servidor
     if (connect(sockfd, (struct sockaddr*) &server, sizeof(server)) == -1) {
         cerr <<"Não pode se conectar ao servidor";
+        close(sockfd);
         return EXIT_FAILURE;
     }
     else
     {
-		// Recebe a mensagem de apresentação do servidor
-		if ((res_ser = recv(sockfd, buffer, LEN, 0)) > 0) {
-			buffer[res_ser + 1] = '\0';
-			cout << "\n" << buffer << endl;
-		}
 		return sockfd;
 	}
 }

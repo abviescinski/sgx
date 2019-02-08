@@ -2,17 +2,56 @@
 
 int main(int argc, char **argv) 
 {
+	if (argc!=2)
+    {
+        printf("Use: %s <hostname>\n", argv[0]);
+        exit(0);
+    }
+    
+	
+	SSL_CTX *ctx;
+	SSL *ssl;
 	socket_cliente socket;
 	menu_um   tela_um;
 	int opc, canal;
 	
+	char buffer[LEN];//Buffer
+	int resp_servidor;
+		
+	SSL_library_init();
+	ctx = socket.InitCTX();
 	canal = socket.inicia_conexao(argc, argv);
-	
-	if (canal == 1){
+
+	ssl = SSL_new(ctx); // criar novo estado de conexão SSL
+	SSL_set_fd(ssl, canal); // anexar o descritor de soquete
+	 
+	if (SSL_connect(ssl) == -1 ){
 		cout << "A comunicação com o servidor falhou! :( \n";
+		ERR_print_errors_fp(stderr);
 	}
 	else
 	{	
+		socket.ShowCerts(ssl); // pegue qualquer certificado
+		cout << "Conectado com encriptacao " << SSL_get_cipher(ssl);
+				
+		//Recebe a resposta do servidor
+		//if((resp_servidor = SSL_read(ssl, buffer, LEN)) > 0){
+			//buffer[resp_servidor] = '\0';
+			SSL_read(ssl, buffer, sizeof(buffer));
+			cout<<"servidor diz: " << buffer << endl;
+		//}
+		
+		bzero(buffer,LEN);
+		
+		strcpy(buffer, "Ola Servidor, eu sou o seu cliente.");
+
+		SSL_write(ssl,buffer, sizeof (buffer));   // criptografar e enviar mensagem
+		
+		//SSL_free(ssl); // liberar estado de conexão
+		
+		//close(canal);
+	}
+		/*
 		cout <<"\nSelecione uma opção:\n";
 		cout <<"	1 - Criar conta.\n";
 		cout <<"	2 - Remover conta.\n";
@@ -45,7 +84,7 @@ int main(int argc, char **argv)
 				cin >> opc;
 				cin.ignore();
 		}
-	}
+	}*/
 	//colocar em loop para a pessoa selecionar as opcoes informadas ou encerrar o programa
 		
 }

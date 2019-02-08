@@ -12,8 +12,8 @@
 
 #include <mysql/mysql.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
+#include "openssl/ssl.h"
+#include "openssl/err.h"
 #include <resolv.h>
 
 #define HOST "localhost"
@@ -34,25 +34,20 @@ class socket_server{
 	public:
 		socket_server();
 		int cria_s(MYSQL banco);
-		void conversa_s(MYSQL banco, int clientefd, SSL *ssl);
+		void conversa_s(MYSQL banco, SSL *ssl);
 		void encerra_s();
 		
 		MYSQL conecta_bd();
 		
 		//Funções ssl
 		SSL_CTX* InitServerCTX(void);
-		void LoadCertificates(SSL_CTX* ctx, char* CertFile, char* KeyFile);
+		void LoadCertificates(SSL_CTX* ctx, const char* CertFile, const char* KeyFile);
 		void ShowCerts(SSL* ssl);
-		void Servlet(SSL* ssl);
 	
 	
 	int serverfd; // Descritores de arquivo de cliente e servidor (serverfd usada em cria_s)
 	struct sockaddr_in server; // Estruturas de soquete de cliente e servidor (server usada em cria_s)
-	
-	struct sockaddr_in client, server;
-	socklen_t client_len = sizeof(client); //armazena o tamanho do endereço do cliente. Isso é necessário para a chamada do sistema aceito.
-	int serverfd, clientfd;// Descritores de arquivo de cliente e servidor
-    int id_process; //resposta é o valor de retorno para as chamadas read () e write (); isto é, contém o número de caracteres lidos ou escritos.
+    
     char buffer_serv[BUFFER_LENGTH];// Descritores de arquivo de cliente e servidor
 	
 };

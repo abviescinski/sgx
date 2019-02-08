@@ -23,13 +23,13 @@ MYSQL socket_server::conecta_bd(){
 
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-SSL_CTX* InitServerCTX(void)
+SSL_CTX* socket_server::InitServerCTX(void)
 {   const SSL_METHOD *method;
     SSL_CTX *ctx;
  
     OpenSSL_add_all_algorithms();  // carregar e registrar todos os criptos, etc.
     SSL_load_error_strings(); // carregar todas as mensagens de erro
-    method = TLS_server_method();  // criar nova instância de método de servidor
+    method = TLSv1_2_server_method();  // criar nova instância de método de servidor
     ctx = SSL_CTX_new(method);   // criar novo contexto a partir do método
     if ( ctx == NULL )
     {
@@ -39,7 +39,7 @@ SSL_CTX* InitServerCTX(void)
     return ctx;
 }
 
-void LoadCertificates(SSL_CTX* ctx, char* CertFile, char* KeyFile)
+void socket_server::LoadCertificates(SSL_CTX* ctx, const char* CertFile, const char* KeyFile)
 {
     // definir o certificado local do CertFile 
     if (SSL_CTX_use_certificate_file(ctx, CertFile, SSL_FILETYPE_PEM)<=0)
@@ -61,9 +61,29 @@ void LoadCertificates(SSL_CTX* ctx, char* CertFile, char* KeyFile)
     }
 }
 
+void socket_server::ShowCerts(SSL* ssl)
+{   X509 *cert;
+    char *line;
+ 
+    cert = SSL_get_peer_certificate(ssl); // Obter certificados (se disponíveis)
+    if ( cert != NULL )
+    {
+        printf("Certificados de servidor:\n");
+        line = X509_NAME_oneline(X509_get_subject_name(cert), 0, 0);
+        printf("Sujeito: %s\n", line);
+        free(line);
+        line = X509_NAME_oneline(X509_get_issuer_name(cert), 0, 0);
+        printf("Emissora: %s\n", line);
+        free(line);
+        X509_free(cert);
+    }
+    else
+        printf("Sem certificados.\n");
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int socket_server::cria_s(MYSQL banco){
-
+	
     // Cria um soquete IPv4
     this->serverfd = socket(PF_INET, SOCK_STREAM, 0);
     if(this->serverfd < 0) {
@@ -101,13 +121,31 @@ int socket_server::cria_s(MYSQL banco){
     return serverfd;
 }
 
-void socket_server::conversa_s(MYSQL banco, int clientfd, SSL *ssl){
-
+void socket_server::conversa_s(MYSQL banco, SSL *ssl){
+	
+	 int message_len;
+	 socket_server mm;
+	
     /* Cópias em buffer nossa mensagem de boas vindas */
-    strcpy(buffer_serv, "****Inicio Cliente**** \0");
-
-    /* Envia a mensagem para o cliente */
-	if (send(clientfd, buffer_serv, strlen(buffer_serv), 0)) {
+   // strcpy(buffer_serv, "****Inicio Cliente**** \0");
+	
+	if ( SSL_accept(ssl) == (-1) ) // o protocolo SSL aceita
+        ERR_print_errors_fp(stderr);
+    else
+    {
+		mm.ShowCerts(ssl); // obter quaisquer certificados
+				
+		cout << "Cliente conectado, aguardando mensagem.\n";
+		
+		message_len = SSL_read(ssl, buffer_serv, sizeof(buffer_serv));
+		cout <<"Cliente disse: "<< buffer_serv <<endl;
+				
+	}	
+		
+    /* Envia a mensagem para o cliente
+	if (send(client_fd, buffer_serv, strlen(buffer_serv), 0)) {
+        
+        
         cout << "Cliente conectado, aguardando mensagem.\n";
 		menu_um tela_um;
 		
@@ -116,33 +154,33 @@ void socket_server::conversa_s(MYSQL banco, int clientfd, SSL *ssl){
 
         // Recebe mensagem do cliente 
         int message_len;
-        if((message_len = recv(clientfd, buffer_serv, BUFFER_LENGTH, 0)) > 0){
+        if((message_len = recv(client_fd, buffer_serv, BUFFER_LENGTH, 0)) > 0){
 			buffer_serv[message_len - 1] = '\0';
             cout <<"Cliente disse: "<< buffer_serv <<endl;
         }
         
         if(strcmp(buffer_serv, "Criar") == 0){
-			tela_um.criar_conta(clientfd, banco);
+			tela_um.criar_conta(client_fd, banco);
         }else{
             if (strcmp(buffer_serv, "Remover") == 0){
-				tela_um.remover(clientfd, banco);					
+				tela_um.remover(client_fd, banco);					
 			}else{
 				if (strcmp(buffer_serv, "Acessar") == 0){
-					tela_um.acessar(clientfd, banco);					
+					tela_um.acessar(client_fd, banco);					
 				}else{
 					if (strcmp(buffer_serv, "Depositar") == 0){
-						tela_um.depositar(clientfd, banco);					
+						tela_um.depositar(client_fd, banco);					
 					}else{
 						if (strcmp(buffer_serv, "Sair") == 0){
 							//Conexão do cliente Fechar 
-							close(clientfd);				
+							close(client_fd);				
 						}
 					}
 				}
 			}
         }
         
-	}
+	}*/
      
 }
 

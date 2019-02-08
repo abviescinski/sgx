@@ -1,16 +1,20 @@
-#include <stdio.h> //ok
-#include <stdlib.h> //ok
-#include <string.h> //ok
-#include <iostream> //ok
-#include <errno.h> //ok
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <iostream>
+#include <errno.h>
 #include <stdbool.h>
-#include <unistd.h> //ok
+#include <unistd.h>
 
 #include <netdb.h> //presente no cliente*
-#include <sys/types.h> //ok
-#include <sys/socket.h> //ok
-#include <netinet/in.h> //ok
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h> 
 #include <arpa/inet.h>
+
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include <resolv.h>
 
 #define PORT 4242 //porta do servidor
 #define LEN 128 //Tamanho de buffer do socket
@@ -24,6 +28,9 @@ class socket_cliente{
 		socket_cliente();
 		int inicia_conexao(int argc, char **argv);
 		void fecha_conexao();
+		
+		void ShowCerts(SSL* ssl);
+		SSL_CTX* InitCTX(void);
     
     struct hostent *endereco;//define o endereço ip do servidor
     struct sockaddr_in server;//Server socket
