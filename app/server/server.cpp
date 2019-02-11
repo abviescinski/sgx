@@ -14,7 +14,8 @@ SSL_CTX* socket_server::InitServerCTX(void){
 	
     OpenSSL_add_all_algorithms();  /* load & register all cryptos, etc. */
     SSL_load_error_strings();   /* load all error messages */
-    method = TLS_server_method();  /* create new server-method instance */
+    //method = TLS_server_method();  /* create new server-method instance */
+    method = TLSv1_server_method();  /* create new server-method instance */
     ctx = SSL_CTX_new(method);   /* create new context from method */
     
     cout<<"Finalizou os carregamentos SSL, verifica se deu tudo certo.\n";
@@ -179,7 +180,9 @@ menu_um::menu_um(){
 
 void menu_um::criar_conta(SSL* ssl, MYSQL banco){
 	SSL_write(ssl, "Voce selecionou 'Criar conta'.", BUFFER_LENGTH);
-
+	char info_cliente[6][BUFFER_LENGTH];
+	char x[2][BUFFER_LENGTH];
+	
 	for(int i = 0; i < 5; i++){
 		if((contador = SSL_read(ssl, info_cliente[i], BUFFER_LENGTH)) > 0){
 			info_cliente[i][contador - 1] = '\0';
@@ -189,12 +192,11 @@ void menu_um::criar_conta(SSL* ssl, MYSQL banco){
 
 	if((str_bd.insert_bd(banco, NovoCliente, info_cliente)) == 0){
 		dados_banco = str_bd.select_bd(banco, IDcliente, info_cliente[1]);
-		strcpy(info_cliente[6], dados_banco[0]);
+		strcpy(info_cliente[5], dados_banco[0]);
 
-		bzero(dados_banco,sizeof(dados_banco));
-		
 		if ((str_bd.insert_bd(banco, NovaConta, info_cliente)) == 0){
-			dados_banco = str_bd.innerjoin_bd(banco, IDconta, info_cliente);
+			strcpy(x[0], info_cliente[5]);
+			dados_banco = str_bd.innerjoin_bd(banco, IDconta, x);
 			SSL_write(ssl, dados_banco[0], BUFFER_LENGTH);
 		}else{
 			cerr << "Erro na inserção da conta - "<< mysql_errno(&banco)<< " : "<< mysql_error(&banco) << endl;
@@ -210,6 +212,7 @@ void menu_um::remover(SSL* ssl, MYSQL banco){
 
 void menu_um::acessar(SSL* ssl, MYSQL banco){
 	SSL_write(ssl, "Voce selecionou 'Acessar a conta'.", BUFFER_LENGTH);
+	char info_cliente[2][BUFFER_LENGTH];
 	
 	bzero(buffer_respostas,BUFFER_LENGTH);
 	menu_dois tela_dois;
@@ -254,6 +257,7 @@ void menu_um::acessar(SSL* ssl, MYSQL banco){
 void menu_um::depositar(SSL* ssl, MYSQL banco){
 	SSL_write(ssl, "Voce selecionou 'Depositar'.", BUFFER_LENGTH);
 	bzero(buffer_respostas,BUFFER_LENGTH);
+	char info_cliente[2][BUFFER_LENGTH];
 	
 	for (int i = 0; i < 2; i++){
 		if((contador = SSL_read(ssl, info_cliente[i], BUFFER_LENGTH)) > 0){
@@ -291,17 +295,21 @@ void menu_dois::obtem_saldo(SSL* ssl, MYSQL banco, char dados_acesso[BUFFER_LENG
 
 void menu_dois::sacar(SSL* ssl, MYSQL banco, char dados_acesso[3][BUFFER_LENGTH]){
 	SSL_write(ssl, "Você selecionou 'Sacar'.", BUFFER_LENGTH);
+	char info_cliente[2][BUFFER_LENGTH];
+	strcpy(info_cliente[1], dados_acesso[0]);
 	
+	//retornar saldo atual para realizar ação
 	dados_banco = str_bd.select_bd(banco, Saldo, dados_acesso[0]);
-	
 	cout << "Saldo: "<< dados_banco[0]<< endl;
 	SSL_write(ssl, dados_banco[0], BUFFER_LENGTH);
 
-	if((contador = SSL_read(ssl, info_cliente, BUFFER_LENGTH)) > 0){
-        cout << "Cliente disse: " << info_cliente[0]<<endl;
+	//recebe o valor que deseja sacar 
+	if((contador = SSL_read(ssl, info_cliente[0], BUFFER_LENGTH)) > 0){
+        cout << "Cliente disse: " << info_cliente[0] <<endl;
 		
 		res_banco = str_bd.update_bd(banco, Subtrai, info_cliente);
 		
+		bzero(dados_banco,sizeof(dados_banco));
 		dados_banco = str_bd.select_bd(banco, Saldo, dados_acesso[0]);
 	
 		cout << "Saldo: "<< dados_banco[0]<< endl;
@@ -311,34 +319,43 @@ void menu_dois::sacar(SSL* ssl, MYSQL banco, char dados_acesso[3][BUFFER_LENGTH]
 
 void menu_dois::transferir(SSL* ssl, MYSQL banco, char dados_acesso[3][BUFFER_LENGTH]){
 	SSL_write(ssl, "Você selecionou 'Transferir'.", BUFFER_LENGTH);
+	char info_cliente[2][BUFFER_LENGTH];
 	
+	//retornar saldo atual para realizar ação
 	dados_banco = str_bd.select_bd(banco, Saldo, dados_acesso[0]);
-	
 	cout << "Saldo: "<< dados_banco[0]<< endl;
 	SSL_write(ssl, dados_banco[0], BUFFER_LENGTH);	
 	
 	//recebe o valor e a conta que sera beneficiada
 	for (int i = 0; i < 2; i++){
-		if((contador = SSL_read(ssl, info_cliente, BUFFER_LENGTH)) > 0){
+		contador=0;
+		if((contador = SSL_read(ssl, info_cliente[i], BUFFER_LENGTH)) > 0){
 		 info_cliente[i][contador - 1] = '\0';
          cout << "Cliente disse: "<< info_cliente[i]<< endl;
 		}
 	}
 	
-	dados_banco = str_bd.innerjoin_bd(banco, Nome,info_cliente);
+	//busca o nome do beneficiado
+	bzero(dados_banco,sizeof(dados_banco));
+	dados_banco = str_bd.innerjoin_bd(banco, Nome, info_cliente);
 	SSL_write(ssl, dados_banco[0], BUFFER_LENGTH);
 	
 	//recebe confirmacao de insercao
 	SSL_read(ssl, buffer_respostas, BUFFER_LENGTH);
-
+	
 	if (strcmp(buffer_respostas, "sim") == 0){
-		str_bd.update_bd(banco, Soma, info_cliente);
+		strcpy(dados_acesso[1], info_cliente[1]);
 		
-		str_bd.update_bd(banco, Subtrai, info_cliente);
+		int c = str_bd.update_bd(banco, Soma, info_cliente);
+		int d = str_bd.update_bd(banco, Subtrai, dados_acesso);
 		
-		
-		dados_banco=str_bd.select_bd(banco, Saldo, dados_acesso[0]);
-		SSL_write(ssl, dados_banco[0], BUFFER_LENGTH);
+		if ((c==0)&&(d==0)){		
+			bzero(dados_banco,sizeof(dados_banco));
+			dados_banco=str_bd.select_bd(banco, Saldo, dados_acesso[0]);
+			SSL_write(ssl, dados_banco[0], BUFFER_LENGTH);
+		}else{
+			cerr<<"Erro ao realizar atualizações de saldo\n";
+		}
 	}
 };
 

@@ -22,7 +22,8 @@
 
 #define HOST "localhost"
 #define USER "amanda"
-#define PASS "0909"
+//#define PASS "0909"
+#define PASS "Abv0909*"
 #define DB "banco"
 
 #define Saldo 10
@@ -64,8 +65,8 @@ class str_banco{
 	
 	bool insert_bd(MYSQL banco, int opc, char info[5][BUFFER_LENGTH]);
 	MYSQL_ROW select_bd(MYSQL banco, int opc, char info[BUFFER_LENGTH]);
-	MYSQL_ROW innerjoin_bd(MYSQL banco, int opc, char info[6][BUFFER_LENGTH]);
-	bool update_bd(MYSQL banco, int opc, char info[6][BUFFER_LENGTH]);
+	MYSQL_ROW innerjoin_bd(MYSQL banco, int opc, char info[2][BUFFER_LENGTH]);
+	bool update_bd(MYSQL banco, int opc, char info[2][BUFFER_LENGTH]);
 	bool delet_bd(MYSQL banco, int opc);
 	
 	int res_banco;
@@ -86,7 +87,6 @@ class menu_um{
 	
 	str_banco str_bd;
 	char buffer_respostas[BUFFER_LENGTH];
-	char info_cliente[6][BUFFER_LENGTH];
 	int  contador, res_banco;
 	MYSQL_ROW dados_banco;
 	MYSQL_RES *res_consulta;
@@ -96,7 +96,6 @@ class menu_dois{
 	
 	public:
 		menu_dois();
-		void opcoes_dois(SSL* ssl, MYSQL banco, char dados_acesso[3][BUFFER_LENGTH]);
 		void obtem_saldo(SSL* ssl, MYSQL banco, char dados_acesso[BUFFER_LENGTH]);
 		void sacar(SSL* ssl, MYSQL banco, char dados_acesso[3][BUFFER_LENGTH]);
 		void transferir(SSL* ssl, MYSQL banco, char dados_acesso[3][BUFFER_LENGTH]);
@@ -104,7 +103,7 @@ class menu_dois{
 	
 	str_banco str_bd;
 	int  contador, res_banco;
-	char info_cliente[5][BUFFER_LENGTH], buffer_respostas[BUFFER_LENGTH];
+	char buffer_respostas[BUFFER_LENGTH];
 	MYSQL_ROW dados_banco;
 	MYSQL_RES *res_consulta;
 };

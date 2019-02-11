@@ -32,52 +32,20 @@ cout << "210: criou cliente socket, cliente ssl.\n";
     else
     { 
 		cout << "Solicitacao de conexao com servidor aceita\n";
-		/*
-		cout <<"Informe o numero da sua conta: ";
-		cin.getline (buf_cliente,LEN);
-		cout <<"Senha: ";
-		cin.getline (buf,LEN);
-		
-		strcat (buf_cliente, " : ");
-		strcat (buf_cliente,buf);
-		
-		cout << "Criou string para encaminhar ao servidor.\n";
-		cout << "String: "<<buf_cliente <<endl;
-		
-		cout << "\nConectado com "<< SSL_get_cipher(ssl) << endl;
-		
-		socket.ShowCerts(ssl);        // get any certs 
-cout << "Apresentou certificados e a conexao encriptada.\n";
 
-        SSL_write(ssl,buf_cliente, strlen(buf_cliente));   // encrypt & send message 
-
-cout << "Enviou mensagem ao servidor .\n";
-		bzero(buf,LEN);
-		resp = SSL_read(ssl, buf, sizeof(buf));
-		buf[resp] = 0;
-        cout << "Servidor disse: "<< buf<<endl;
-        SSL_free(ssl); 
-    }
-	cout << "Finaliza conexoes .\n";
-    close(canal);         // close socket
-    SSL_CTX_free(ctx);	
-
-	if (canal == 1){
-		cout << "A comunicação com o servidor falhou! :( \n";
-	}
-	else
-	{*/	
 		cout << "\nConectado com "<< SSL_get_cipher(ssl) << endl;
 		
 		socket.ShowCerts(ssl);        // get any certs 
 		cout << "Apresentou certificados e a conexao encriptada.\n";
+		cout << "\033c";
 		
-		cout <<"\nSelecione uma opção:\n";
+		cout <<"\n**Olá Cliente!**\n";
 		cout <<"	1 - Criar conta.\n";
 		cout <<"	2 - Remover conta.\n";
 		cout <<"	3 - Acesso a conta.\n";
 		cout <<"	4 - Depositar.\n";
 		cout <<"	0 - Encerrar conexao.\n";
+		cout <<"Selecione uma opção: ";
 		cin >> opc;
 		
 		cin.ignore();
@@ -100,9 +68,8 @@ cout << "Enviou mensagem ao servidor .\n";
 				socket.fecha_conexao();
 				break;
 			default:
-				cout <<"Selecione uma opcao: \n";
-				cin >> opc;
-				cin.ignore();
+				cout <<"Opção incorreta, encerrando conexão.\n";
+				socket.fecha_conexao();
 		}
 	}
 	//colocar em loop para a pessoa selecionar as opcoes informadas ou encerrar o programa

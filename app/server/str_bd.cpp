@@ -85,7 +85,7 @@ MYSQL_ROW str_banco::select_bd(MYSQL banco, int opc, char info[BUFFER_LENGTH]){
 	}
 }
 
-MYSQL_ROW str_banco::innerjoin_bd(MYSQL banco, int opc, char info[6][BUFFER_LENGTH]){
+MYSQL_ROW str_banco::innerjoin_bd(MYSQL banco, int opc, char info[2][BUFFER_LENGTH]){
 	bzero(solicita,BUFFER_LENGTH);
 	char confirma_cli[50] =  " AND conta.C_ID_Cliente = cliente.ID_Cliente;";
 		
@@ -125,7 +125,7 @@ MYSQL_ROW str_banco::innerjoin_bd(MYSQL banco, int opc, char info[6][BUFFER_LENG
 	}
 }
 
-bool str_banco::update_bd(MYSQL banco, int opc, char info[6][BUFFER_LENGTH]){
+bool str_banco::update_bd(MYSQL banco, int opc, char info[2][BUFFER_LENGTH]){
 	bzero(solicita,BUFFER_LENGTH);
 	
 	switch (opc){

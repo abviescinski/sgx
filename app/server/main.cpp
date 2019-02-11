@@ -15,7 +15,7 @@ int main ()
 	cout << "Iniciou a biblioteca SSL\n";
 	
 	ctx = soquete.InitServerCTX(); // initialize SSL 
-    soquete.LoadCertificates(ctx, "certificate.pem", "privkey.pem");
+    soquete.LoadCertificates(ctx, "ubuntu.pem", "privkey.pem");
     cout << "carregou a certificacao SSL e os certificados\n";
 	server_fd = soquete.cria_s(banco);
 	cout << "criou servidor socket\n";

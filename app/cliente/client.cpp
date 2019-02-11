@@ -10,7 +10,8 @@ SSL_CTX* socket_cliente::InitCTX(void)
 cout << "Inicio cliente CTX, carregar as coisas do OpenSSL\n";
     OpenSSL_add_all_algorithms();  /* Load cryptos, et.al. */
     SSL_load_error_strings();   /* Bring in and register error messages */
-    method = TLS_client_method();  /* Create new client-method instance */
+    //method = TLS_client_method();  /* Create new client-method instance */
+    method = TLSv1_client_method();  /* Create new client-method instance */
     ctx = SSL_CTX_new(method);   /* Create new context */
 cout << "Finalizou os carregamentos SSL, verifica se deu tudo certo.\n";
     if ( ctx == NULL )
