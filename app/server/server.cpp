@@ -5,85 +5,82 @@ socket_server::socket_server(){
 	
 }
 
-MYSQL socket_server::conecta_bd(){
-
-	MYSQL conexao;
-
-    mysql_init(&conexao);
-    if ( mysql_real_connect(&conexao, HOST, USER, PASS, DB, 0, NULL, 0) )
-    {
-          cout << "Conectado na base de dados com sucesso!\n";
-          return conexao;
-    }
-    else
-    {
-          cout << "Falha de conexao\n";
-          cerr << "Erro " << mysql_errno(&conexao) << " : " << mysql_error(&conexao);
-    }
-
-}
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-SSL_CTX* socket_server::InitServerCTX(void)
-{   const SSL_METHOD *method;
+SSL_CTX* socket_server::InitServerCTX(void){
+	const SSL_METHOD *method;
     SSL_CTX *ctx;
- 
-    OpenSSL_add_all_algorithms();  // carregar e registrar todos os criptos, etc.
-    SSL_load_error_strings(); // carregar todas as mensagens de erro
-    method = TLSv1_2_server_method();  // criar nova instância de método de servidor
-    ctx = SSL_CTX_new(method);   // criar novo contexto a partir do método
-    if ( ctx == NULL )
-    {
+    
+	cout << "Inicio server CTX, carregar as coisas do OpenSSL\n";
+	
+    OpenSSL_add_all_algorithms();  /* load & register all cryptos, etc. */
+    SSL_load_error_strings();   /* load all error messages */
+    method = TLS_server_method();  /* create new server-method instance */
+    ctx = SSL_CTX_new(method);   /* create new context from method */
+    
+    cout<<"Finalizou os carregamentos SSL, verifica se deu tudo certo.\n";
+    
+    if ( ctx == NULL ){
         ERR_print_errors_fp(stderr);
         abort();
     }
+    
+    cout << "Finaliza a função Init server e retorna ctx.\n";
     return ctx;
 }
 
-void socket_server::LoadCertificates(SSL_CTX* ctx, const char* CertFile, const char* KeyFile)
-{
-    // definir o certificado local do CertFile 
-    if (SSL_CTX_use_certificate_file(ctx, CertFile, SSL_FILETYPE_PEM)<=0)
-    {
+void socket_server::LoadCertificates(SSL_CTX* ctx, const char* CertFile, const char* KeyFile){
+	// set the local certificate from CertFile
+    if ( SSL_CTX_use_certificate_file(ctx, CertFile, SSL_FILETYPE_PEM)<=0){
         ERR_print_errors_fp(stderr);
         abort();
     }
-    // definir a chave privada do KeyFile (pode ser o mesmo que CertFile) 
-    if (SSL_CTX_use_PrivateKey_file(ctx, KeyFile, SSL_FILETYPE_PEM)<=0)
-    {
+    
+    cout << "Load Certificates, verifica o pem do certificado se esta correto\n";
+    
+    //set the private key from KeyFile (may be the same as CertFile)
+    if ( SSL_CTX_use_PrivateKey_file(ctx, KeyFile, SSL_FILETYPE_PEM)<=0){
         ERR_print_errors_fp(stderr);
         abort();
     }
-    // verifica chave privada 
-    if (!SSL_CTX_check_private_key(ctx))
-    {
-        fprintf(stderr, "Chave privada não corresponde ao certificado público\n");
+    
+    cout << "Load Certificates, verifica o se pem do chave privada esta correto\n";
+    
+    /* verify private key */
+    if (!SSL_CTX_check_private_key(ctx)){
+        cout << "Private key does not match the public certificate\n";
         abort();
     }
+    
+    cout <<"Finaliza a função LoadCertificates, tudo certo ate aqui\n";
 }
 
-void socket_server::ShowCerts(SSL* ssl)
-{   X509 *cert;
+void socket_server::ShowCerts(SSL* ssl){
+	X509 *cert;
     char *line;
  
-    cert = SSL_get_peer_certificate(ssl); // Obter certificados (se disponíveis)
+	cout <<"Apresenta certificados \n";
+ 
+    cert = SSL_get_peer_certificate(ssl); /* Get certificates (if available) */
+    
+    cout <<"Obter certificados (se disponíveis)\n";
+    
     if ( cert != NULL )
     {
-        printf("Certificados de servidor:\n");
+        cout <<"\n--------INFORMACOES DO CERTIFICADO--------\n";
+        cout <<"Server certificates:\n";
         line = X509_NAME_oneline(X509_get_subject_name(cert), 0, 0);
-        printf("Sujeito: %s\n", line);
+        cout <<"Subject: "<< line << endl;
         free(line);
         line = X509_NAME_oneline(X509_get_issuer_name(cert), 0, 0);
-        printf("Emissora: %s\n", line);
+        cout << "Issuer: "<< line << endl;
         free(line);
         X509_free(cert);
     }
-    else
-        printf("Sem certificados.\n");
+    else cout << "LADO SERVIDOR, sem certificados!\n";
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int socket_server::cria_s(MYSQL banco){
-	
     // Cria um soquete IPv4
     this->serverfd = socket(PF_INET, SOCK_STREAM, 0);
     if(this->serverfd < 0) {
@@ -92,7 +89,7 @@ int socket_server::cria_s(MYSQL banco){
     }
     cout << "Servidor soquete criado com fd: " << this->serverfd << endl;
 	
-	bzero((char *)&server, sizeof(server));
+	bzero((char*)&server, sizeof(server));
 	
     // Define as propriedades do soquete do servidor
     server.sin_family = AF_INET;
@@ -121,72 +118,55 @@ int socket_server::cria_s(MYSQL banco){
     return serverfd;
 }
 
-void socket_server::conversa_s(MYSQL banco, SSL *ssl){
+void socket_server::conversa_s(MYSQL banco, SSL* ssl){
+	int message_len;
+	menu_um tela_um;
 	
-	 int message_len;
-	 socket_server mm;
-	
-    /* Cópias em buffer nossa mensagem de boas vindas */
-   // strcpy(buffer_serv, "****Inicio Cliente**** \0");
-	
-	if ( SSL_accept(ssl) == (-1) ) // o protocolo SSL aceita
+	if ( SSL_accept(ssl) == -1 )     /* do SSL-protocol accept */
         ERR_print_errors_fp(stderr);
     else
     {
-		mm.ShowCerts(ssl); // obter quaisquer certificados
-				
+        ShowCerts(ssl); /* get any certificates */
 		cout << "Cliente conectado, aguardando mensagem.\n";
-		
-		message_len = SSL_read(ssl, buffer_serv, sizeof(buffer_serv));
-		cout <<"Cliente disse: "<< buffer_serv <<endl;
-				
-	}	
-		
-    /* Envia a mensagem para o cliente
-	if (send(client_fd, buffer_serv, strlen(buffer_serv), 0)) {
-        
-        
-        cout << "Cliente conectado, aguardando mensagem.\n";
-		menu_um tela_um;
-		
-        // Zerando Buffers 
-        bzero(buffer_serv,BUFFER_LENGTH);
-
-        // Recebe mensagem do cliente 
-        int message_len;
-        if((message_len = recv(client_fd, buffer_serv, BUFFER_LENGTH, 0)) > 0){
-			buffer_serv[message_len - 1] = '\0';
-            cout <<"Cliente disse: "<< buffer_serv <<endl;
-        }
-        
-        if(strcmp(buffer_serv, "Criar") == 0){
-			tela_um.criar_conta(client_fd, banco);
-        }else{
-            if (strcmp(buffer_serv, "Remover") == 0){
-				tela_um.remover(client_fd, banco);					
+       
+		if((message_len = SSL_read(ssl, buffer_server, BUFFER_LENGTH)) > 0){
+        //message_len = SSL_read(ssl, buffer_server, BUFFER_LENGTH); /* get request */
+			buffer_server[message_len] = '\0';
+			cout << "Cliente diz: "<< buffer_server << endl;
+ 
+			if(strcmp(buffer_server, "Criar ") == 0){
+				cout <<"Criar\n";
+				tela_um.criar_conta(ssl, banco);
 			}else{
-				if (strcmp(buffer_serv, "Acessar") == 0){
-					tela_um.acessar(client_fd, banco);					
+				if (strcmp(buffer_server, "Remover ") == 0){
+					cout <<"Remover\n";
+					tela_um.remover(ssl, banco);					
 				}else{
-					if (strcmp(buffer_serv, "Depositar") == 0){
-						tela_um.depositar(client_fd, banco);					
+					if (strcmp(buffer_server, "Acessar ") == 0){
+						cout <<"Acessar\n";
+						tela_um.acessar(ssl, banco);					
 					}else{
-						if (strcmp(buffer_serv, "Sair") == 0){
-							//Conexão do cliente Fechar 
-							close(client_fd);				
+						if (strcmp(buffer_server, "Depositar ") == 0){
+							cout <<"Depositar\n";
+							tela_um.depositar(ssl, banco);					
+						}else{
+							if (strcmp(buffer_server, "Sair") == 0){
+								cout <<"Sair\n";
+								//Conexão do cliente Fechar 
+								//close(ssl);				
+							}
 						}
 					}
 				}
 			}
-        }
-        
-	}*/
-     
+		}
+        else ERR_print_errors_fp(stderr);   
+    }
 }
 
 void socket_server::encerra_s(){
 
-    /* Feche o soquete local */
+     //Feche o soquete local
     close(this->serverfd);
 
     cout << "Conexao encerrada"<< endl;
@@ -197,181 +177,99 @@ menu_um::menu_um(){
 	
 };
 
-void menu_um::criar_conta(int client_fd, MYSQL banco){
-	send(client_fd, "Voce selecionou 'Criar conta'.", BUFFER_LENGTH, 0);
-		
+void menu_um::criar_conta(SSL* ssl, MYSQL banco){
+	SSL_write(ssl, "Voce selecionou 'Criar conta'.", BUFFER_LENGTH);
+
 	for(int i = 0; i < 5; i++){
-		if((contador = recv(client_fd, dados_cliente[i], BUFFER_LENGTH, 0)) > 0){
-			dados_cliente[i][contador - 1] = '\0';
-			printf("Cliente disse:%s\n", dados_cliente[i]);
+		if((contador = SSL_read(ssl, info_cliente[i], BUFFER_LENGTH)) > 0){
+			info_cliente[i][contador - 1] = '\0';
+			cout << "Cliente disse:"<< info_cliente[i]<<endl;
 		}
 	}
-	
-	strcpy(str_banco,"INSERT INTO cliente(nome, cpf, telefone) values('");
-	strcat(str_banco, dados_cliente[0]);
-	strcat(str_banco, "','");
-	strcat(str_banco, dados_cliente[1]);
-	strcat(str_banco, "','");
-	strcat(str_banco, dados_cliente[2]);
-	strcat(str_banco, "');");
-	
-	res_banco = mysql_query(&banco,str_banco);
-	
-	if (!res_banco) printf("Registros inseridos %d\n", mysql_affected_rows(&banco));
-    else printf("Erro na inserção %d : %s\n", mysql_errno(&banco), mysql_error(&banco));
-    
-    bzero(str_banco,BUFFER_LENGTH);
-        
-	strcpy(str_banco, "SELECT cliente.ID_Cliente FROM cliente WHERE nome = '");
-	strcat(str_banco,dados_cliente[0]);
-	strcat(str_banco,"';");
 
-	if (mysql_query(&banco,str_banco)){
-		printf("Erro: %s\n",mysql_error(&banco));
-	}else{
-		res_consulta = mysql_store_result(&banco);//recebe a consulta
-		if (res_consulta) //se houver consulta
-        {
-			dados_banco=mysql_fetch_row(res_consulta);
-		}
-	}
-	
-	bzero(str_banco,BUFFER_LENGTH);
-	
-    strcpy(str_banco,"INSERT INTO conta(senha, saldo, tipo, C_ID_Cliente) values('");
-	strcat(str_banco, dados_cliente[3]);
-	strcat(str_banco, "','100','");
-	strcat(str_banco, dados_cliente[4]);
-	strcat(str_banco, "','");
-	strcat(str_banco, dados_banco[0]);
-	strcat(str_banco, "');");
-	
-	res_banco = mysql_query(&banco,str_banco);
-	
-	if (!res_banco){
-		printf("Registros inseridos %d\n", mysql_affected_rows(&banco));
-		bzero(str_banco,BUFFER_LENGTH);
-		strcpy(str_banco, "SELECT conta.ID_Conta FROM conta INNER JOIN cliente ON cliente.ID_Cliente = ");
-		strcat(str_banco,dados_banco[0]);
-		strcat(str_banco," AND conta.C_ID_Cliente = cliente.ID_Cliente;");
+	if((str_bd.insert_bd(banco, NovoCliente, info_cliente)) == 0){
+		dados_banco = str_bd.select_bd(banco, IDcliente, info_cliente[1]);
+		strcpy(info_cliente[6], dados_banco[0]);
 
-		bzero(dados_banco,BUFFER_LENGTH);
-		if (mysql_query(&banco,str_banco)){
-			printf("Erro: %s\n",mysql_error(&banco));
+		bzero(dados_banco,sizeof(dados_banco));
+		
+		if ((str_bd.insert_bd(banco, NovaConta, info_cliente)) == 0){
+			dados_banco = str_bd.innerjoin_bd(banco, IDconta, info_cliente);
+			SSL_write(ssl, dados_banco[0], BUFFER_LENGTH);
 		}else{
-			res_consulta = mysql_store_result(&banco);//recebe a consulta
-			if (res_consulta) //se houver consulta
-			{
-				dados_banco=mysql_fetch_row(res_consulta);
-				send(client_fd, dados_banco[0], BUFFER_LENGTH, 0);
-			}
+			cerr << "Erro na inserção da conta - "<< mysql_errno(&banco)<< " : "<< mysql_error(&banco) << endl;
 		}
-    }else{
-		printf("Erro na inserção %d : %s\n", mysql_errno(&banco), mysql_error(&banco));
-    }
+	}else{
+		cerr << "Erro na inserção do cliente - "<< mysql_errno(&banco)<< " : "<< mysql_error(&banco) << endl;
+	}
+}
+
+void menu_um::remover(SSL* ssl, MYSQL banco){
+	SSL_write(ssl, "Voce selecionou 'Remover conta'.", BUFFER_LENGTH);
 };
 
-void menu_um::remover(int client_fd, MYSQL banco){
-	send(client_fd, "Voce selecionou 'Remover conta'.", BUFFER_LENGTH, 0);
-
-};
-
-void menu_um::acessar(int client_fd, MYSQL banco){
-	send(client_fd, "Voce selecionou 'Acessar a conta'.", BUFFER_LENGTH, 0);
+void menu_um::acessar(SSL* ssl, MYSQL banco){
+	SSL_write(ssl, "Voce selecionou 'Acessar a conta'.", BUFFER_LENGTH);
 	
-	bzero(str_banco,BUFFER_LENGTH);
 	bzero(buffer_respostas,BUFFER_LENGTH);
 	menu_dois tela_dois;
 	
 	for (int i = 0; i < 2; i++){
-		if((contador = recv(client_fd, dados_cliente[i], BUFFER_LENGTH, 0)) > 0){
-			dados_cliente[i][contador - 1] = '\0';
-			printf("Cliente disse:%s\n", dados_cliente[i]);
+		if((contador = SSL_read(ssl, info_cliente[i], BUFFER_LENGTH)) > 0){
+			info_cliente[i][contador - 1] = '\0';
+			cout << "Cliente disse: " << info_cliente[i] << endl;
 		}
 	}
 	
-	//descobre o nome do cliente que esta fazendo login com base no id da conta e da senha
-	strcpy(str_banco, "SELECT cliente.nome FROM conta INNER JOIN cliente ON conta.ID_conta = ");
-	strcat(str_banco,dados_cliente[0]);
-	strcat(str_banco," AND conta.senha = ");
-	strcat(str_banco,dados_cliente[1]);
-	strcat(str_banco," AND conta.C_ID_Cliente = cliente.ID_Cliente;");
-
-	if (mysql_query(&banco,str_banco)){
-		printf("Erro: %s\n",mysql_error(&banco));
-	}else{
-		//se caso nao deu erro na consulta, independente de ter retornado positivo ou negativo, entra aqui
-		res_consulta = mysql_store_result(&banco);//recebe a consulta
-		if ((dados_banco=mysql_fetch_row(res_consulta)) != NULL){
-			contador = 0;
-			strcpy(dados_cliente[2], dados_banco[0]);
-            send(client_fd, dados_banco[0], BUFFER_LENGTH, 0);
-            //criar outra clase para esses codigos IF pois sao o menu 2
-			if((contador = recv(client_fd, buffer_respostas, BUFFER_LENGTH, 0)) > 0){
-				if(strcmp(buffer_respostas, "Saldo") == 0){
-					printf("Acesso -> Saldo \n");
-					tela_dois.obtem_saldo(client_fd, banco, dados_cliente);
+	//retorna o nome do cliente se dados de login estiver corretos
+	dados_banco = str_bd.innerjoin_bd(banco, Login, info_cliente);
+	
+	contador = 0;
+	strcpy(info_cliente[2], dados_banco[0]);            
+    SSL_write(ssl, dados_banco[0], BUFFER_LENGTH);
+    
+    //criar outra clase para esses codigos IF pois sao o menu 2
+    if((contador = SSL_read(ssl, buffer_respostas, BUFFER_LENGTH)) > 0){
+		if(strcmp(buffer_respostas, "Saldo") == 0){
+			cout << "Acesso -> Saldo \n";
+			tela_dois.obtem_saldo(ssl, banco, info_cliente[0]);
+		}else{
+			if (strcmp(buffer_respostas, "Saque") == 0){
+				cout << "Acesso -> Saque \n";
+				tela_dois.sacar(ssl, banco, info_cliente);					
+			}else{
+				if (strcmp(buffer_respostas, "Transferencia") == 0){
+					cout << "Acesso -> Transferencia \n";
+					tela_dois.transferir(ssl, banco, info_cliente);					
 				}else{
-					if (strcmp(buffer_respostas, "Saque") == 0){
-						printf("Acesso -> Saque \n");
-						tela_dois.sacar(client_fd, banco, dados_cliente);					
-					}else{
-						if (strcmp(buffer_respostas, "Transferencia") == 0){
-							printf("Acesso -> Transferencia \n");
-							tela_dois.transferir(client_fd, banco, dados_cliente);					
-						}else{
-							if (strcmp(buffer_respostas, "Sair") == 0){
-								printf("Acesso -> Sair \n");					
-							}
-						}
+					if (strcmp(buffer_respostas, "Sair") == 0){
+						cout << "Acesso -> Sair \n";					
 					}
 				}
-				
 			}
-		}
-    }
+		}		
+	}
 };
 
-void menu_um::depositar(int client_fd, MYSQL banco){
-	send(client_fd, "Voce selecionou 'Depositar'.", BUFFER_LENGTH, 0);
+void menu_um::depositar(SSL* ssl, MYSQL banco){
+	SSL_write(ssl, "Voce selecionou 'Depositar'.", BUFFER_LENGTH);
+	bzero(buffer_respostas,BUFFER_LENGTH);
+	
 	for (int i = 0; i < 2; i++){
-		if((contador = recv(client_fd, dados_cliente[i], BUFFER_LENGTH, 0)) > 0){
-		 dados_cliente[i][contador - 1] = '\0';
-         printf("Cliente disse:%s\n", dados_cliente[i]);
+		if((contador = SSL_read(ssl, info_cliente[i], BUFFER_LENGTH)) > 0){
+		 info_cliente[i][contador - 1] = '\0';
+         cout << "Cliente disse:"<< info_cliente[i] << endl;
 		}
 	}
-	
-	//monta a string de selecao ja somando o valor a ser depositado
-	strcpy(str_banco, "SELECT cliente.nome FROM conta INNER JOIN cliente ON conta.ID_conta = ");
-	strcat(str_banco,dados_cliente[0]);
-	strcat(str_banco," AND conta.C_ID_Cliente = cliente.ID_Cliente;");
-	
-	//realiza a busca no banco de dados, trata erro ou confirma e armazena os resultados em *dados_banco
-	// onde linha[0] e' o saldo na conta+ o valor a ser depositado e linha[1] e' o nome do beneficiado
-	if (mysql_query(&banco,str_banco)){
-		printf("Erro: %s\n",mysql_error(&banco));
-	}else{
-		res_consulta = mysql_store_result(&banco);//recebe a consulta
-		if (res_consulta) //se houver consulta
-        {
-			dados_banco=mysql_fetch_row(res_consulta);
-			send(client_fd, dados_banco[0], BUFFER_LENGTH, 0);
-		}
-	}
-	
+	//recebe o nome completo do beneficiado
+	dados_banco = str_bd.innerjoin_bd(banco, Nome,info_cliente);
+	SSL_write(ssl, dados_banco[0], BUFFER_LENGTH);
+
 	//recebe confirmacao de insercao
-	recv(client_fd, buffer_respostas, BUFFER_LENGTH, 0);
+	SSL_read(ssl, buffer_respostas, BUFFER_LENGTH);
 	
 	if (strcmp(buffer_respostas, "sim") == 0){
-		bzero(str_banco,BUFFER_LENGTH);		
-		strcpy(str_banco, "UPDATE `conta` SET `saldo` = saldo + ");
-		strcat(str_banco, dados_cliente[1]);
-		strcat(str_banco, " WHERE `ID_Conta` = ");
-		strcat(str_banco, dados_cliente[0]);
-		strcat(str_banco, ";");
-		res_banco = mysql_query(&banco,str_banco);
-		if (!res_banco) printf("Registros alterados %d\n", mysql_affected_rows(&banco));
-		else printf("Erro na inserção %d : %s\n", mysql_errno(&banco), mysql_error(&banco));
+		str_bd.update_bd(banco, Soma, info_cliente);
 	}
 	
 	//falta tratar erro quando o numero da conta não existe
@@ -382,179 +280,68 @@ menu_dois::menu_dois(){
 	
 };
 
-void menu_dois::obtem_saldo(int client_fd, MYSQL banco, char dados_acesso[3][BUFFER_LENGTH]){
-	send(client_fd, "Você selecionou 'Saldo'.", BUFFER_LENGTH, 0);
+void menu_dois::obtem_saldo(SSL* ssl, MYSQL banco, char dados_acesso[BUFFER_LENGTH]){
+	SSL_write(ssl, "Você selecionou 'Saldo'.", BUFFER_LENGTH);
 	
-	//monta a string de selecao para descobrir o saldo e envia ao cliente
-	bzero(str_banco,BUFFER_LENGTH);
-	strcpy(str_banco, "SELECT conta.saldo FROM conta WHERE conta.ID_conta = ");
-	strcat(str_banco, dados_acesso[0]);
-	strcat(str_banco, ";");
-
-	if (mysql_query(&banco,str_banco)){
-		printf("Erro: %s\n",mysql_error(&banco));
-	}else{
-		res_consulta = mysql_store_result(&banco);//recebe a consulta
-		if (res_consulta) //se houver consulta
-        {
-			dados_banco=mysql_fetch_row(res_consulta);
-			printf("Saldo:%s\n", dados_banco[0]);
-			send(client_fd, dados_banco[0], BUFFER_LENGTH, 0);
-		}
-	}
+	dados_banco = str_bd.select_bd(banco, Saldo, dados_acesso);
 	
+	cout << "Saldo: "<< dados_banco[0]<< endl;
+	SSL_write(ssl, dados_banco[0], BUFFER_LENGTH);	
 };
 
-void menu_dois::sacar(int client_fd, MYSQL banco, char dados_acesso[3][BUFFER_LENGTH]){
-	send(client_fd, "Você selecionou 'Sacar'.", BUFFER_LENGTH, 0);
+void menu_dois::sacar(SSL* ssl, MYSQL banco, char dados_acesso[3][BUFFER_LENGTH]){
+	SSL_write(ssl, "Você selecionou 'Sacar'.", BUFFER_LENGTH);
 	
-	//apresentar o saldo primeiro e depois perguntar qual valor deseja transferir
-	//monta a string de selecao para descobrir o saldo e envia ao cliente
-	bzero(str_banco,BUFFER_LENGTH);
-	strcpy(str_banco, "SELECT conta.saldo FROM conta WHERE conta.ID_conta = ");
-	strcat(str_banco, dados_acesso[0]);
-	strcat(str_banco, ";");
+	dados_banco = str_bd.select_bd(banco, Saldo, dados_acesso[0]);
+	
+	cout << "Saldo: "<< dados_banco[0]<< endl;
+	SSL_write(ssl, dados_banco[0], BUFFER_LENGTH);
 
-	if (mysql_query(&banco,str_banco)){
-		printf("Erro: %s\n",mysql_error(&banco));
-	}else{
-		res_consulta = mysql_store_result(&banco);//recebe a consulta
-		if (res_consulta) //se houver consulta
-        {
-			dados_banco=mysql_fetch_row(res_consulta);
-			send(client_fd, dados_banco[0], BUFFER_LENGTH, 0);
-		}
-	}
-	
-	if((contador = recv(client_fd, dados_cliente, BUFFER_LENGTH, 0)) > 0){
-        printf("Cliente disse:%s\n", dados_cliente[0]);
+	if((contador = SSL_read(ssl, info_cliente, BUFFER_LENGTH)) > 0){
+        cout << "Cliente disse: " << info_cliente[0]<<endl;
 		
-		bzero(str_banco,BUFFER_LENGTH);		
-		strcpy(str_banco, "UPDATE `conta` SET `saldo` = saldo - ");
-		strcat(str_banco, dados_cliente[0]);
-		strcat(str_banco, " WHERE `ID_Conta` = ");
-		strcat(str_banco, dados_acesso[0]);
-		strcat(str_banco, ";");
-		res_banco = mysql_query(&banco,str_banco);
-		if (!res_banco){
-			printf("Registros alterados %d\n", mysql_affected_rows(&banco));
-			//apresentar o saldo primeiro e depois perguntar qual valor deseja transferir
-			//monta a string de selecao para descobrir o saldo e envia ao cliente
-			bzero(str_banco,BUFFER_LENGTH);
-			strcpy(str_banco, "SELECT conta.saldo FROM conta WHERE conta.ID_conta = ");
-			strcat(str_banco, dados_acesso[0]);
-			strcat(str_banco, ";");
-
-			if (mysql_query(&banco,str_banco)){
-				printf("Erro: %s\n",mysql_error(&banco));
-			}else{
-				res_consulta = mysql_store_result(&banco);//recebe a consulta
-				if (res_consulta) //se houver consulta
-				{
-					dados_banco=mysql_fetch_row(res_consulta);
-					send(client_fd, dados_banco[0], BUFFER_LENGTH, 0);
-				}
-			}
-		}else{
-			printf("Erro na inserção %d : %s\n", mysql_errno(&banco), mysql_error(&banco));
-		}
-	}
+		res_banco = str_bd.update_bd(banco, Subtrai, info_cliente);
+		
+		dados_banco = str_bd.select_bd(banco, Saldo, dados_acesso[0]);
 	
+		cout << "Saldo: "<< dados_banco[0]<< endl;
+		SSL_write(ssl, dados_banco[0], BUFFER_LENGTH);
+	}
 };
 
-void menu_dois::transferir(int client_fd, MYSQL banco, char dados_acesso[3][BUFFER_LENGTH]){
-	send(client_fd, "Você selecionou 'Transferir'.", BUFFER_LENGTH, 0);
+void menu_dois::transferir(SSL* ssl, MYSQL banco, char dados_acesso[3][BUFFER_LENGTH]){
+	SSL_write(ssl, "Você selecionou 'Transferir'.", BUFFER_LENGTH);
 	
-	//apresentar o saldo primeiro e depois perguntar qual valor deseja transferir
-	//monta a string de selecao para descobrir o saldo e envia ao cliente
-	bzero(str_banco,BUFFER_LENGTH);
-	strcpy(str_banco, "SELECT conta.saldo FROM conta WHERE conta.ID_conta = ");
-	strcat(str_banco, dados_acesso[0]);
-	strcat(str_banco, ";");
-
-	if (mysql_query(&banco,str_banco)){
-		printf("Erro: %s\n",mysql_error(&banco));
-	}else{
-		res_consulta = mysql_store_result(&banco);//recebe a consulta
-		if (res_consulta) //se houver consulta
-        {
-			dados_banco=mysql_fetch_row(res_consulta);
-			send(client_fd, dados_banco[0], BUFFER_LENGTH, 0);
-		}
-	}
+	dados_banco = str_bd.select_bd(banco, Saldo, dados_acesso[0]);
+	
+	cout << "Saldo: "<< dados_banco[0]<< endl;
+	SSL_write(ssl, dados_banco[0], BUFFER_LENGTH);	
 	
 	//recebe o valor e a conta que sera beneficiada
 	for (int i = 0; i < 2; i++){
-		if((contador = recv(client_fd, dados_cliente[i], BUFFER_LENGTH, 0)) > 0){
-		 dados_cliente[i][contador - 1] = '\0';
-         printf("Cliente disse:%s\n", dados_cliente[i]);
+		if((contador = SSL_read(ssl, info_cliente, BUFFER_LENGTH)) > 0){
+		 info_cliente[i][contador - 1] = '\0';
+         cout << "Cliente disse: "<< info_cliente[i]<< endl;
 		}
 	}
 	
-	//monta a string de selecao para descobrir o nome do beneficiado
-	strcpy(str_banco, "SELECT cliente.nome FROM conta INNER JOIN cliente ON conta.ID_conta = ");
-	strcat(str_banco,dados_cliente[0]);
-	strcat(str_banco," AND conta.C_ID_Cliente = cliente.ID_Cliente;");
-	
-	//realiza a busca no banco de dados, trata erro ou confirma e armazena os resultados em *dados_banco
-	// onde linha[0] e' o (saldo na conta+ o valor a ser depositado) e linha[1] e' o nome do beneficiado
-	if (mysql_query(&banco,str_banco)){
-		printf("Erro: %s\n",mysql_error(&banco));
-	}else{
-		res_consulta = mysql_store_result(&banco);//recebe a consulta
-		if (res_consulta) //se houver consulta
-        {
-			dados_banco=mysql_fetch_row(res_consulta);
-			send(client_fd, dados_banco[0], BUFFER_LENGTH, 0);
-		}
-	}
+	dados_banco = str_bd.innerjoin_bd(banco, Nome,info_cliente);
+	SSL_write(ssl, dados_banco[0], BUFFER_LENGTH);
 	
 	//recebe confirmacao de insercao
-	recv(client_fd, buffer_respostas, BUFFER_LENGTH, 0);
-	
-	if (strcmp(buffer_respostas, "sim") == 0){
-		//insere valor na conta do beneficiado
-		bzero(str_banco,BUFFER_LENGTH);		
-		strcpy(str_banco, "UPDATE `conta` SET `saldo` = saldo + ");
-		strcat(str_banco, dados_cliente[1]);
-		strcat(str_banco, " WHERE `ID_Conta` = ");
-		strcat(str_banco, dados_cliente[0]);
-		strcat(str_banco, ";");
-		res_banco = mysql_query(&banco,str_banco);
-		if (!res_banco) printf("Registros alterados %d\n", mysql_affected_rows(&banco));
-		else printf("Erro na inserção %d : %s\n", mysql_errno(&banco), mysql_error(&banco));
-		
-		//descontar o valor transferido da conta atual
-		bzero(str_banco,BUFFER_LENGTH);		
-		strcpy(str_banco, "UPDATE `conta` SET `saldo` = saldo - ");
-		strcat(str_banco, dados_cliente[1]);
-		strcat(str_banco, " WHERE `ID_Conta` = ");
-		strcat(str_banco, dados_acesso[0]);
-		strcat(str_banco, ";");
-		res_banco = mysql_query(&banco,str_banco);
-		if (!res_banco) printf("Registros alterados %d\n", mysql_affected_rows(&banco));
-		else printf("Erro na inserção %d : %s\n", mysql_errno(&banco), mysql_error(&banco));
-		
-		//apresentar o saldo
-		//monta a string de selecao para descobrir o saldo e envia ao cliente
-		bzero(str_banco,BUFFER_LENGTH);
-		strcpy(str_banco, "SELECT conta.saldo FROM conta WHERE conta.ID_conta = ");
-		strcat(str_banco, dados_acesso[0]);
-		strcat(str_banco, ";");
+	SSL_read(ssl, buffer_respostas, BUFFER_LENGTH);
 
-		if (mysql_query(&banco,str_banco)){
-			printf("Erro: %s\n",mysql_error(&banco));
-		}else{
-			res_consulta = mysql_store_result(&banco);//recebe a consulta
-			if (res_consulta) //se houver consulta
-			{
-				dados_banco=mysql_fetch_row(res_consulta);
-				send(client_fd, dados_banco[0], BUFFER_LENGTH, 0);
-			}
-		}
+	if (strcmp(buffer_respostas, "sim") == 0){
+		str_bd.update_bd(banco, Soma, info_cliente);
+		
+		str_bd.update_bd(banco, Subtrai, info_cliente);
+		
+		
+		dados_banco=str_bd.select_bd(banco, Saldo, dados_acesso[0]);
+		SSL_write(ssl, dados_banco[0], BUFFER_LENGTH);
 	}
 };
 
-void menu_dois::extrato(int client_fd, MYSQL banco, char dados_acesso[3][BUFFER_LENGTH]){
-	send(client_fd, "Você selecionou 'Extrato'.", BUFFER_LENGTH, 0);
+void menu_dois::extrato(SSL* ssl, MYSQL banco, char dados_acesso[3][BUFFER_LENGTH]){
+	SSL_write(ssl, "Você selecionou 'Extrato'.", BUFFER_LENGTH);
 };

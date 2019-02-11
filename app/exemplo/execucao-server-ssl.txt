@@ -1,0 +1,29 @@
+204: Iniciou a biblioteca SSL
+63: Inicio server CTX, carregar as coisas do OpenSSL
+70: Finalizou os carregamentos SSL, verifica se deu tudo certo.
+78: Finaliza a função Init server e retorna ctx.
+91: Load Certificates, verifica o pem do certificado se esta correto
+Enter PEM pass phrase:
+100: Load Certificates, verifica o se pem do chave privada esta correto
+109: Finaliza a função LoadCertificates, tudo certo ate aqui
+208: carregou a certificacao SSL e os certificados
+22: iniciou criação do socket
+29: criou cabeçalhos socket 
+42: finalizou criação do socket, testou bind e listen 
+210: criou servidor socket
+216: Entrou no while, criou as estruturas
+220: Aceitou conexao com cliente
+Connection: 127.0.0.1:46586
+225: obteve novo estado SSL com contexto
+146: Iniciou conversa com cliente, carregou as variaveis necessarias.
+116: Apresenta certificados 
+120: Obter certificados (se disponíveis)
+134: LADO SERVIDOR, sem certificados!
+153: Apresentou certificado se tiver e vai receber mensagem ao cliente.
+Cliente diz: "UserName: amanda 
+Password: 123"
+161: Recebeu mensagem do cliente e vai comparar string 
+165: enviou resposta correta ao cliente.
+180: Finalizou conversa com cliente e encerra as conexoes
+216: Entrou no while, criou as estruturas
+

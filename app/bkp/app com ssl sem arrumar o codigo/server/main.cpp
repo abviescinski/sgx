@@ -3,8 +3,7 @@
 int main ()
 {
    	socket_server soquete;
-   	str_banco onbd;
-	MYSQL banco = onbd.conecta_bd();
+	MYSQL banco = soquete.conecta_bd();
 	int server_fd, cliente_fd, id_process;
 	struct sockaddr_in cliente;
 	socklen_t clientelen = sizeof(cliente); //armazena o tamanho do endereço do cliente. Isso é necessário para a chamada do sistema aceito.

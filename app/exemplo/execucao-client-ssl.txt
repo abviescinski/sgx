@@ -1,0 +1,32 @@
+88: INICIO 
+95: Iniciou a biblioteca SSL
+43: Inicio cliente CTX, carregar as coisas do OpenSSL
+48: Finalizou os carregamentos SSL, verifica se deu tudo certo.
+54: Finaliza a função Init e retorna ctx.
+18: iniciou criação do socket
+29: criou cabeçalhos socket 
+36: finalizou criação do socket, conexao com servidor tudo ok 
+210: criou cliente socket, cliente ssl.
+108: solicitacao de conexao com servidor aceita
+Enter the User Name : amanda
+
+
+Enter the Password : 123
+120: Criou string para encaminhar ao servidor.
+
+Connected with ECDHE-RSA-AES256-GCM-SHA384 encryption
+61: Apresenta certificados 
+63: Obter certificados (se disponíveis)
+
+ -------INFORMACOES DO CERTIFICADO ------- 
+Server certificates:
+Subject: /C=BR/ST=Parana/L=Curitiba/O=UFPR/OU=Larsis/CN=Amanda Benites Viescinski/emailAddress=amanda.b.vieski@gmail.com
+Issuer: /C=BR/ST=Parana/L=Curitiba/O=UFPR/OU=Larsis/CN=Amanda Benites Viescinski/emailAddress=amanda.b.vieski@gmail.com
+123: apresentou certificados e a conexao encriptada.
+125: enviou mensagem ao servidor .
+Servidor disse: "Name: aticleworld.com 
+year: 1.5 
+BlogType: Embedede and c c++ 
+Author: amlendra"
+131: finaliza conexoes .
+

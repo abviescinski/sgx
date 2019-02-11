@@ -17,23 +17,16 @@
 
 #include <mysql/mysql.h>
 
-#define PORT 4242
-#define BUFFER_LENGTH 128
-
 #define HOST "localhost"
 #define USER "amanda"
 #define PASS "0909"
 #define DB "banco"
 
-#define Saldo 10
-#define IDcliente 20
-#define NovoCliente 30
-#define NovaConta 40
-#define IDconta 50
-#define Nome 60
-#define Login 70
-#define Soma 80
-#define Subtrai 90
+/* Define a porta do servidor */
+#define PORT 4242
+
+/* Tamanho de buffer do socket */
+#define BUFFER_LENGTH 128
 
 using namespace std;
 
@@ -41,6 +34,8 @@ class socket_server{
 	
 	public:
 		socket_server();
+	
+		MYSQL conecta_bd();
 		
 		SSL_CTX* InitServerCTX(void);
 		void LoadCertificates(SSL_CTX* ctx, const char* CertFile, const char* KeyFile);
@@ -56,25 +51,6 @@ class socket_server{
 	
 };
 
-class str_banco{
-	
-	public:
-	str_banco();
-	MYSQL conecta_bd();
-	
-	bool insert_bd(MYSQL banco, int opc, char info[5][BUFFER_LENGTH]);
-	MYSQL_ROW select_bd(MYSQL banco, int opc, char info[BUFFER_LENGTH]);
-	MYSQL_ROW innerjoin_bd(MYSQL banco, int opc, char info[6][BUFFER_LENGTH]);
-	bool update_bd(MYSQL banco, int opc, char info[6][BUFFER_LENGTH]);
-	bool delet_bd(MYSQL banco, int opc);
-	
-	int res_banco;
-	char solicita[BUFFER_LENGTH];
-	MYSQL_ROW dados_banco;
-	MYSQL_RES *res_consulta;
-	
-};
-
 class menu_um{
 	
 	public:
@@ -83,11 +59,11 @@ class menu_um{
 		void remover(SSL* ssl, MYSQL banco);
 		void acessar(SSL* ssl, MYSQL banco);
 		void depositar(SSL* ssl, MYSQL banco);
-	
-	str_banco str_bd;
+		
 	char buffer_respostas[BUFFER_LENGTH];
-	char info_cliente[6][BUFFER_LENGTH];
+	char dados_cliente[5][BUFFER_LENGTH];
 	int  contador, res_banco;
+	char str_banco[BUFFER_LENGTH];
 	MYSQL_ROW dados_banco;
 	MYSQL_RES *res_consulta;
 };
@@ -97,14 +73,27 @@ class menu_dois{
 	public:
 		menu_dois();
 		void opcoes_dois(SSL* ssl, MYSQL banco, char dados_acesso[3][BUFFER_LENGTH]);
-		void obtem_saldo(SSL* ssl, MYSQL banco, char dados_acesso[BUFFER_LENGTH]);
+		void obtem_saldo(SSL* ssl, MYSQL banco, char dados_acesso[3][BUFFER_LENGTH]);
 		void sacar(SSL* ssl, MYSQL banco, char dados_acesso[3][BUFFER_LENGTH]);
 		void transferir(SSL* ssl, MYSQL banco, char dados_acesso[3][BUFFER_LENGTH]);
 		void extrato(SSL* ssl, MYSQL banco, char dados_acesso[3][BUFFER_LENGTH]);
 	
-	str_banco str_bd;
 	int  contador, res_banco;
-	char info_cliente[5][BUFFER_LENGTH], buffer_respostas[BUFFER_LENGTH];
+	char dados_cliente[5][BUFFER_LENGTH], buffer_respostas[BUFFER_LENGTH];
+	char str_banco[BUFFER_LENGTH];
 	MYSQL_ROW dados_banco;
 	MYSQL_RES *res_consulta;
 };
+/*
+class banco_str{
+	
+	MYSQL conecta_bd();
+	
+	
+	
+	
+	MYSQL_ROW dados_banco;
+	MYSQL_RES *res_consulta;
+	
+	
+}*/
